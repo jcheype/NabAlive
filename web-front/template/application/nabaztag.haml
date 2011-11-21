@@ -1,0 +1,15 @@
+.row
+    .span8= name
+.row
+    .span8
+        %form.play(action="#" onsubmit="return false")
+            %fieldset
+                %legend Play sound
+                .clearfix
+                    %label(for='url') url:
+                    %input.playUrl(type='text' name='url')
+                .actions
+                    %input.btn.primary(type="submit" value="Play")
+                
+
+%a.btn(href="#nabaztag/list") Back

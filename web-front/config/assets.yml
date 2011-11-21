@@ -1,0 +1,23 @@
+javascripts:
+    lib:
+        - lib/jquery-1.6.4.min.js
+        - lib/jquery.Storage.js
+        - lib/bootstrap-modal.js
+        - lib/bootstrap-scrollspy.js
+        - lib/underscore.js
+        - lib/haml.js
+        - lib/backbone-min.js
+    app:
+        - javascript/model/**/*.js
+        - javascript/view/**/*.js
+        - javascript/main.js
+        - javascript/route.js
+    template:
+        - template/**/*.haml
+
+
+template_extension: haml
+template_function: Haml
+javascript_compressor: uglifier
+compress_assets: off
+gzip_assets: off

@@ -1,0 +1,36 @@
+#loginmodal.modal.hide.fade
+        
+        .modal-header Login
+        .modal-body
+            %form#doLogin(action="#" onsubmit="return false")
+                .clearfix
+                    %label(for='email') email:
+                    %input(type='text' name='email')
+                .clearfix
+                    %label(for='password') password:
+                    %input(type='password' name='password')
+        .modal-footer
+            %button.btn.primary.login Login
+            %button.btn.cancel Cancel
+
+#registermodal.modal.hide.fade
+    .modal-header Register
+    .modal-body
+        %form#doRegister(action="#" onsubmit="return false")
+            %fieldset
+                .clearfix
+                    %label firstname:
+                    %input(type='text' name='firstname')
+                .clearfix
+                    %label lastname:
+                    %input(type='text' name='lastname')
+                .clearfix
+                    %label email:
+                    %input(type='text' name='email')
+                .clearfix
+                    %label password:
+                    %input(type='password' name='password')
+                .actions
+                    %input.btn.primary(type="submit" value="Register")
+                    %button.btn Cancel
+
