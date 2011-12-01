@@ -27,7 +27,7 @@ class NabaztagItemView extends Backbone.View
         configs = @model.get("applicationConfigList")
         console?.log("configs: ", configs)
         _.each(configs, (config) =>
-            cItem = new NabaztagConfigItemView({config: config})
+            cItem = new NabaztagConfigItemView({model: @model, config: config})
             apps.append(cItem.render().el)
         )
         this

@@ -11,20 +11,25 @@
   ApplicationConfigView = (function() {
     __extends(ApplicationConfigView, Backbone.View);
     function ApplicationConfigView() {
+      this.cancel = __bind(this.cancel, this);
       this.save = __bind(this.save, this);
       this.addRfid = __bind(this.addRfid, this);
+      this.isSelected = __bind(this.isSelected, this);
       this.renderFields = __bind(this.renderFields, this);
       this.render = __bind(this.render, this);
+      this.getConfig = __bind(this.getConfig, this);
       this.initialize = __bind(this.initialize, this);
       ApplicationConfigView.__super__.constructor.apply(this, arguments);
     }
     ApplicationConfigView.prototype.events = {
-      "click .save": 'save'
+      "click .save": 'save',
+      "click .cancel": 'cancel'
     };
     ApplicationConfigView.prototype.template = JST['application/config'];
     ApplicationConfigView.prototype.templateRfid = JST['application/config_rfid'];
     ApplicationConfigView.prototype.templateInput = JST['application/config_input'];
     ApplicationConfigView.prototype.initialize = function(options) {
+      var configList;
       if (typeof console !== "undefined" && console !== null) {
         console.log("model: ", this.model);
       }
@@ -34,7 +39,24 @@
       if (typeof console !== "undefined" && console !== null) {
         console.log("app: ", options.application);
       }
-      return this.application = options.application;
+      if (typeof console !== "undefined" && console !== null) {
+        console.log("uuid: ", options.uuid);
+      }
+      this.application = options.application;
+      this.uuid = options.uuid;
+      configList = this.model.get("applicationConfigList");
+      this.config = this.getConfig(this.uuid);
+      if (typeof console !== "undefined" && console !== null) {
+        console.log("configList: ", configList);
+      }
+      return typeof console !== "undefined" && console !== null ? console.log("config: ", this.config) : void 0;
+    };
+    ApplicationConfigView.prototype.getConfig = function(uuid) {
+      var configList;
+      configList = this.model.get("applicationConfigList");
+      return _.first(_.filter(configList, __bind(function(conf) {
+        return conf.uuid === uuid;
+      }, this)));
     };
     ApplicationConfigView.prototype.render = function() {
       var apikey, appName, triggers;
@@ -43,6 +65,9 @@
       $(this.el).find("input.apikey").val(apikey);
       appName = this.application.get("name");
       $(this.el).find("input.appName").val(appName);
+      if (this.config) {
+        $(this.el).find("input.name").val(this.config.name);
+      }
       this.renderFields();
       triggers = this.application.get('triggers');
       _.each(triggers, __bind(function(trigger) {
@@ -56,10 +81,18 @@
       var form;
       form = $(this.el).find("form");
       return _.each(this.application.get('fields'), __bind(function(field) {
+        var domField;
         if (field.type === "INPUT") {
-          return form.append(this.templateInput(field));
+          domField = $(this.templateInput(field));
+          if (this.config) {
+            domField.find("input").val(this.config.parameters[field.name]);
+          }
+          return form.append(domField);
         }
       }, this));
+    };
+    ApplicationConfigView.prototype.isSelected = function(tag) {
+      return this.config && _.include(this.config.tags, tag);
     };
     ApplicationConfigView.prototype.addRfid = function() {
       var field, select, tags;
@@ -67,10 +100,15 @@
       select = field.find("select");
       tags = this.model.get("tags");
       _.each(tags, __bind(function(tag) {
+        var s;
         if (typeof console !== "undefined" && console !== null) {
           console.log("tag", tag);
         }
-        return select.append("<option value=\"" + tag + "\">" + tag + "</option>");
+        s = "";
+        if (this.isSelected(tag)) {
+          s = 'selected="selected"';
+        }
+        return select.append("<option " + s + (" value=\"" + tag + "\">" + tag + "</option>"));
       }, this));
       if (typeof console !== "undefined" && console !== null) {
         console.log("field: ", field);
@@ -86,6 +124,9 @@
     ApplicationConfigView.prototype.save = function() {
       var data;
       data = $(this.el).find("form").serialize();
+      if (this.config) {
+        data += "&uuid=" + this.config.uuid;
+      }
       if (typeof console !== "undefined" && console !== null) {
         console.log("data: ", data);
       }
@@ -99,6 +140,9 @@
           }, this)
         });
       }, this));
+    };
+    ApplicationConfigView.prototype.cancel = function() {
+      return router.navigate("nabaztag/list", true);
     };
     return ApplicationConfigView;
   })();

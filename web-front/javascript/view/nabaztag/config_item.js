@@ -11,12 +11,14 @@
   NabaztagConfigItemView = (function() {
     __extends(NabaztagConfigItemView, Backbone.View);
     function NabaztagConfigItemView() {
+      this.moreClick = __bind(this.moreClick, this);
       this.deleteClick = __bind(this.deleteClick, this);
       this.render = __bind(this.render, this);
       NabaztagConfigItemView.__super__.constructor.apply(this, arguments);
     }
     NabaztagConfigItemView.prototype.events = {
-      'click .delete': 'deleteClick'
+      'click .delete': 'deleteClick',
+      'click .more': 'moreClick'
     };
     NabaztagConfigItemView.prototype.template = JST['nabaztag/config_item'];
     NabaztagConfigItemView.prototype.initialize = function(options) {
@@ -35,6 +37,9 @@
         url: "/config/" + this.config.uuid
       });
       return router.nabaztagCollection.fetch();
+    };
+    NabaztagConfigItemView.prototype.moreClick = function() {
+      return router.navigate("nabaztag/" + (this.model.get('macAddress')) + "/appinstall/" + this.config.applicationStoreApikey + "/" + this.config.uuid, true);
     };
     return NabaztagConfigItemView;
   })();

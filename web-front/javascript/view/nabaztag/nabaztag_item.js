@@ -46,6 +46,7 @@
       _.each(configs, __bind(function(config) {
         var cItem;
         cItem = new NabaztagConfigItemView({
+          model: this.model,
           config: config
         });
         return apps.append(cItem.render().el);

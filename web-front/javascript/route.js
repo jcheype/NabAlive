@@ -47,6 +47,7 @@
       "nabaztag/list": "nabaztagList",
       "nabaztag/add": "nabaztagAdd",
       "nabaztag/:mac/appinstall/:apikey": "nabaztagInstallApp",
+      "nabaztag/:mac/appinstall/:apikey/:uuid": "nabaztagInstallApp",
       "applications": "applicationList",
       "*actions": "defaultRoute"
     };
@@ -104,7 +105,7 @@
       nabaztagAddView = new NabaztagAddView();
       return $('#content').html($(nabaztagAddView.render().el));
     };
-    AppRouter.prototype.nabaztagInstallApp = function(mac, apikey) {
+    AppRouter.prototype.nabaztagInstallApp = function(mac, apikey, uuid) {
       if (typeof console !== "undefined" && console !== null) {
         console.log("nabaztagInstallApp");
       }
@@ -119,7 +120,8 @@
           }
           applicationConfigView = new ApplicationConfigView({
             model: nab,
-            application: app
+            application: app,
+            uuid: uuid
           });
           return $('#content').html($(applicationConfigView.render().el));
         }, this));

@@ -25,6 +25,7 @@ class AppRouter extends Backbone.Router
         "nabaztag/list": "nabaztagList",
         "nabaztag/add": "nabaztagAdd",
         "nabaztag/:mac/appinstall/:apikey": "nabaztagInstallApp",
+        "nabaztag/:mac/appinstall/:apikey/:uuid": "nabaztagInstallApp",
         "applications": "applicationList",
         "*actions": "defaultRoute"
     }
@@ -63,13 +64,13 @@ class AppRouter extends Backbone.Router
         nabaztagAddView = new NabaztagAddView()
         $('#content').html($(nabaztagAddView.render().el))
         
-    nabaztagInstallApp: (mac, apikey) =>
+    nabaztagInstallApp: (mac, apikey, uuid) =>
         console?.log("nabaztagInstallApp")
         @nabaztagCollection.getAndRun(mac, (nab)=>
             @applicationCollection.getAndRun(apikey, (app)=>
                 console?.log("nab",nab)
                 console?.log("app",app)
-                applicationConfigView = new ApplicationConfigView({model: nab, application: app})
+                applicationConfigView = new ApplicationConfigView({model: nab, application: app, uuid: uuid})
                 $('#content').html($(applicationConfigView.render().el))
             )   
         )     
