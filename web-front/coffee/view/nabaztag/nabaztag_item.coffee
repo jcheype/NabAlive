@@ -1,18 +1,17 @@
 class NabaztagItemView extends Backbone.View    
     events:
         'click .nab .delete' : "deleteClick"
-        'click .action'   : 'actionClick'
+        'click .nab .btn.action'   : 'actionClick'
    
     template: JST['nabaztag/nabaztag_item']
    
-       
     initialize: ()->
         @model.bind('change', @render)
    
     render: =>
         $(@el).html( @template(@model.toJSON()) )
         
-        actionBtn = $(@el).find(".action")
+        actionBtn = $(@el).find(".nab .btn.action")
         isConnected = @model.get("connected")
         if(isConnected)
             actionBtn.removeClass("disabled")

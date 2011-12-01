@@ -18,7 +18,7 @@
     }
     NabaztagItemView.prototype.events = {
       'click .nab .delete': "deleteClick",
-      'click .action': 'actionClick'
+      'click .nab .btn.action': 'actionClick'
     };
     NabaztagItemView.prototype.template = JST['nabaztag/nabaztag_item'];
     NabaztagItemView.prototype.initialize = function() {
@@ -27,7 +27,7 @@
     NabaztagItemView.prototype.render = function() {
       var actionBtn, apps, configs, isConnected;
       $(this.el).html(this.template(this.model.toJSON()));
-      actionBtn = $(this.el).find(".action");
+      actionBtn = $(this.el).find(".nab .btn.action");
       isConnected = this.model.get("connected");
       if (isConnected) {
         actionBtn.removeClass("disabled");
