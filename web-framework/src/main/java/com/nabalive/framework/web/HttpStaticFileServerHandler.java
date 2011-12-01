@@ -46,11 +46,7 @@ import org.jboss.netty.channel.DefaultFileRegion;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.FileRegion;
 import org.jboss.netty.handler.codec.frame.TooLongFrameException;
-import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
-import org.jboss.netty.handler.codec.http.HttpHeaders;
-import org.jboss.netty.handler.codec.http.HttpRequest;
-import org.jboss.netty.handler.codec.http.HttpResponse;
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import org.jboss.netty.handler.codec.http.*;
 import org.jboss.netty.handler.ssl.SslHandler;
 import org.jboss.netty.handler.stream.ChunkedFile;
 import org.jboss.netty.util.CharsetUtil;
@@ -62,22 +58,22 @@ import org.slf4j.LoggerFactory;
  * HTTP responses.  It also implements {@code 'If-Modified-Since'} header to
  * take advantage of browser cache, as described in
  * <a href="http://tools.ietf.org/html/rfc2616#section-14.25">RFC 2616</a>.
- *
+ * <p/>
  * <h3>How Browser Caching Works</h3>
- *
+ * <p/>
  * Web browser caching works with HTTP headers as illustrated by the following
  * sample:
  * <ol>
  * <li>Request #1 returns the content of <code>/file1.txt</code>.</li>
  * <li>Contents of <code>/file1.txt</code> is cached by the browser.</li>
  * <li>Request #2 for <code>/file1.txt</code> does return the contents of the
- *     file again. Rather, a 304 Not Modified is returned. This tells the
- *     browser to use the contents stored in its cache.</li>
+ * file again. Rather, a 304 Not Modified is returned. This tells the
+ * browser to use the contents stored in its cache.</li>
  * <li>The server knows the file has not been modified because the
- *     <code>If-Modified-Since</code> date is the same as the file's last
- *     modified date.</li>
+ * <code>If-Modified-Since</code> date is the same as the file's last
+ * modified date.</li>
  * </ol>
- *
+ * <p/>
  * <pre>
  * Request #1 Headers
  * ===================
@@ -107,7 +103,7 @@ import org.slf4j.LoggerFactory;
  * @author <a href="http://gleamynode.net/">Trustin Lee</a>
  * @author <a href="http://www.veebsbraindump.com/">Veebs</a>
  */
-public class HttpStaticFileServerHandler{
+public class HttpStaticFileServerHandler {
     private static final Logger logger = LoggerFactory.getLogger(HttpStaticFileServerHandler.class);
 
     public static final String HTTP_DATE_FORMAT = "EEE, dd MMM yyyy HH:mm:ss zzz";
@@ -122,20 +118,33 @@ public class HttpStaticFileServerHandler{
 
     public void messageReceived(ChannelHandlerContext ctx, HttpRequest request) throws Exception {
         //HttpRequest request = (HttpRequest) e.getMessage();
+
+        QueryStringDecoder qs = new QueryStringDecoder(request.getUri());
+
         if (request.getMethod() != GET) {
             sendError(ctx, METHOD_NOT_ALLOWED);
             return;
         }
 
-        final String path = sanitizeUri(request.getUri());
+        final String path = sanitizeUri(qs.getPath());
         if (path == null) {
             sendError(ctx, FORBIDDEN);
             return;
         }
 
+        boolean toBeCached = false;
         File file = new File(path);
-        if(file.isDirectory())
+
+        if (file.isDirectory())
             file = new File(file, "index.html");
+
+        if(!file.exists()){
+            String newPath = path.replaceAll("_[0-9]+(\\.\\w+)$", "$1");
+            logger.debug("newPath: {}", newPath);
+            file = new File(newPath);
+            toBeCached = true;
+        }
+
         logger.debug("search file: {}", file.getAbsolutePath());
         if (file.isHidden() || !file.exists()) {
             sendError(ctx, NOT_FOUND);
@@ -148,8 +157,7 @@ public class HttpStaticFileServerHandler{
 
         // Cache Validation
         String ifModifiedSince = request.getHeader(HttpHeaders.Names.IF_MODIFIED_SINCE);
-        if (ifModifiedSince != null && !ifModifiedSince.equals(""))
-        {
+        if (ifModifiedSince != null && !ifModifiedSince.equals("")) {
             SimpleDateFormat dateFormatter = new SimpleDateFormat(HTTP_DATE_FORMAT, Locale.US);
             Date ifModifiedSinceDate = dateFormatter.parse(ifModifiedSince);
 
@@ -163,8 +171,17 @@ public class HttpStaticFileServerHandler{
         }
 
         RandomAccessFile raf;
+        boolean isGz = false;
         try {
-            raf = new RandomAccessFile(file, "r");
+            File fileGz = new File(file.getAbsolutePath()+".gz");
+            logger.debug("searching gzip: {}", fileGz.getAbsolutePath());
+            String acceptHeader = request.getHeader(Names.ACCEPT_ENCODING);
+            if(fileGz.isFile() && acceptHeader!=null && acceptHeader.contains("gzip")){
+                isGz = true;
+                raf = new RandomAccessFile(fileGz, "r");
+            }
+            else
+                raf = new RandomAccessFile(file, "r");
         } catch (FileNotFoundException fnfe) {
             sendError(ctx, NOT_FOUND);
             return;
@@ -174,8 +191,10 @@ public class HttpStaticFileServerHandler{
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         setContentLength(response, fileLength);
         setContentTypeHeader(response, file);
-        setDateAndCacheHeaders(response, file);
-
+        setDateAndCacheHeaders(response, file, toBeCached);
+        if(isGz)
+            response.setHeader(Names.CONTENT_ENCODING, "gzip");
+        
         Channel ch = ctx.getChannel();//e.getChannel();
 
         // Write the initial line and the header.
@@ -189,7 +208,7 @@ public class HttpStaticFileServerHandler{
         } else {
             // No encryption - use zero-copy.
             final FileRegion region =
-                new DefaultFileRegion(raf.getChannel(), 0, fileLength);
+                    new DefaultFileRegion(raf.getChannel(), 0, fileLength);
             writeFuture = ch.write(region);
             writeFuture.addListener(new ChannelFutureProgressListener() {
                 @Override
@@ -245,8 +264,8 @@ public class HttpStaticFileServerHandler{
         // Simplistic dumb security check.
         // You will have to do something serious in the production environment.
         if (uri.contains(File.separator + ".") ||
-            uri.contains("." + File.separator) ||
-            uri.startsWith(".") || uri.endsWith(".")) {
+                uri.contains("." + File.separator) ||
+                uri.startsWith(".") || uri.endsWith(".")) {
             return null;
         }
 
@@ -268,8 +287,7 @@ public class HttpStaticFileServerHandler{
     /**
      * When file timestamp is the same as what the browser is sending up, send a "304 Not Modified"
      *
-     * @param ctx
-     *            Context
+     * @param ctx Context
      */
     private void sendNotModified(ChannelHandlerContext ctx) {
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, HttpResponseStatus.NOT_MODIFIED);
@@ -282,8 +300,7 @@ public class HttpStaticFileServerHandler{
     /**
      * Sets the Date header for the HTTP response
      *
-     * @param response
-     *            HTTP response
+     * @param response HTTP response
      */
     private void setDateHeader(HttpResponse response) {
         SimpleDateFormat dateFormatter = new SimpleDateFormat(HTTP_DATE_FORMAT, Locale.US);
@@ -296,12 +313,14 @@ public class HttpStaticFileServerHandler{
     /**
      * Sets the Date and Cache headers for the HTTP Response
      *
-     * @param response
-     *            HTTP response
-     * @param fileToCache
-     *            file to extract content type
+     * @param response    HTTP response
+     * @param fileToCache file to extract content type
      */
-    private void setDateAndCacheHeaders(HttpResponse response, File fileToCache) {
+    private void setDateAndCacheHeaders(HttpResponse response, File fileToCache, boolean isCached) {
+        int httpCacheSeconds = HTTP_CACHE_SECONDS;
+        if (isCached)
+            httpCacheSeconds = HTTP_CACHE_SECONDS * 60 * 24 * 365;
+
         SimpleDateFormat dateFormatter = new SimpleDateFormat(HTTP_DATE_FORMAT, Locale.US);
         dateFormatter.setTimeZone(TimeZone.getTimeZone(HTTP_DATE_GMT_TIMEZONE));
 
@@ -310,26 +329,22 @@ public class HttpStaticFileServerHandler{
         response.setHeader(HttpHeaders.Names.DATE, dateFormatter.format(time.getTime()));
 
         // Add cache headers
-        time.add(Calendar.SECOND, HTTP_CACHE_SECONDS);
+        time.add(Calendar.SECOND, httpCacheSeconds);
         response.setHeader(HttpHeaders.Names.EXPIRES, dateFormatter.format(time.getTime()));
-        response.setHeader(HttpHeaders.Names.CACHE_CONTROL, "private, max-age=" + HTTP_CACHE_SECONDS);
+        response.setHeader(HttpHeaders.Names.CACHE_CONTROL, "private, max-age=" + httpCacheSeconds);
         response.setHeader(HttpHeaders.Names.LAST_MODIFIED, dateFormatter.format(new Date(fileToCache.lastModified())));
     }
 
     /**
      * Sets the content type header for the HTTP Response
      *
-     * @param response
-     *            HTTP response
-     * @param file
-     *            file to extract content type
+     * @param response HTTP response
+     * @param file     file to extract content type
      */
     private void setContentTypeHeader(HttpResponse response, File file) {
         MimetypesFileTypeMap mimeTypesMap = new MimetypesFileTypeMap();
         String name = file.getName();
         String mime = mimeTypesMap.getContentType(name);
-//        String mime = URLConnection.guessContentTypeFromName(file.getName());
-        logger.debug("mime type of {}: {}", name, mime);
         response.setHeader(HttpHeaders.Names.CONTENT_TYPE, mime);
     }
 

@@ -1,4 +1,5 @@
 (function() {
+  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
   _.templateSettings = {
     interpolate: /\{\{(.+?)\}\}/g
   };
@@ -9,5 +10,7 @@
       return jqXHR.setRequestHeader('token', token);
     }
   });
-  $('#topbar').scrollSpy();
+  $(document).ready(__bind(function() {
+    return $('#topbar').scrollSpy();
+  }, this));
 }).call(this);

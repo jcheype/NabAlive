@@ -2,8 +2,8 @@ package com.nabalive.framework.web;
 
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.handler.codec.http.HttpContentCompressor;
-import org.jboss.netty.handler.codec.http.HttpServerCodec;
+import org.jboss.netty.handler.codec.http.*;
+import org.jboss.netty.handler.stream.ChunkedWriteHandler;
 import org.jboss.netty.handler.timeout.IdleStateHandler;
 import org.jboss.netty.util.HashedWheelTimer;
 import org.jboss.netty.util.Timer;
@@ -33,12 +33,13 @@ public class HttpApiServerPipelineFactory implements ChannelPipelineFactory {
 //        pipeline.addLast("ssl", new SslHandler(engine));
 
         pipeline.addLast("timeout", new IdleStateHandler(timer, 0, 0, 20));
-        pipeline.addLast("http", new HttpServerCodec());
-        //pipeline.addLast("decoder", new HttpRequestDecoder());
-        //pipeline.addLast("encoder", new HttpResponseEncoder());
-        pipeline.addLast("comressor", new HttpContentCompressor());
-        //pipeline.addLast("aggregator", new HttpChunkAggregator(65536));
-        //pipeline.addLast("chunkedWriter", new ChunkedWriteHandler());
+
+        pipeline.addLast("decoder", new HttpRequestDecoder());
+        pipeline.addLast("encoder", new HttpResponseEncoder());
+        
+//        pipeline.addLast("comressor", new HttpContentCompressor(9));
+        pipeline.addLast("aggregator", new HttpChunkAggregator(65536));
+        pipeline.addLast("chunkedWriter", new ChunkedWriteHandler());
 
 
         //pipeline.addLast("executor", eh);

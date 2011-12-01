@@ -4,6 +4,116 @@
   -moz-border-radius: @radius;
 }
 
+.box-shadow (@x: 0, @y: 0, @blur: 1px, @alpha) {
+  @val: @x @y @blur rgba(0, 0, 0, @alpha);
+
+  box-shadow:         @val;
+  -webkit-box-shadow: @val;
+  -moz-box-shadow:    @val;
+}
+
 #content{
-    margin-top: 40px;
+    margin-top: 50px;
+}
+
+input{
+    height: 28px;
+}
+
+.topbar{
+    ul.nav.right{
+        float:right;
+        li{
+            float:left;
+        }
+    }
+}
+
+.nabaztagCollection{
+    .content{
+        width: 100%;
+        height: auto;
+        float:left;
+        
+        .nabaztagItem{
+            float:left;
+            width: 200px;
+            margin: 10px;
+            padding: 10px;
+            .rounded-corners;
+            .box-shadow(0, 0, 5px, 0.4);
+            .nab{
+                width:100%;
+                height:20px;
+                cursor:pointer;
+                .name{
+                    float:left;
+                }
+                .action{
+                    float:right;
+                    div{
+                        float:left;
+                    }
+                }
+            }
+            
+            .configItem{
+                margin-left:10px;
+                height: 20px;
+                .content{
+                    width:100px;
+                    float:left;
+                }
+                .action{
+                    float:right;
+                    .btn{
+                        float:left;
+                    }
+                }
+
+            }
+            .label.btn{
+                margin-left: 3px;
+            }
+        }
+    }
+    .footer{
+        height: auto;
+        width:100%;
+        float:left;
+    }
+}
+
+.applicationItem{
+    float:left;
+    height: 64px;
+    width: 190px;
+    .rounded-corners;
+    .box-shadow(0, 0, 5px, 0.4);
+    margin: 5px;
+    
+    border: 1px solid #a0a0a0;
+    
+    .icon{
+        float:left;
+        height: 64px;
+        width: 64px;
+    }
+
+    .content{
+        float:left;
+        height: 42px;
+        width: 126px;
+    }
+
+    .action{
+        float:left;
+        height: 16px;
+        width: 126px;
+        
+        .btn{
+            float:right;
+            margin-right:5px;
+        }
+    }
 }

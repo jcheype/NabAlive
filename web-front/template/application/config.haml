@@ -1,0 +1,9 @@
+.applicationConfig
+    %form(action="#" onsubmit="return false")
+         %input.apikey(type="hidden" name="apikey")
+         %input.appName(type="hidden" name="appName")
+         .clearfix
+             %label(for="rfid") Name:
+             %input.name(type="text" name="name")
+    .actions
+        %button.btn.primary.save Save

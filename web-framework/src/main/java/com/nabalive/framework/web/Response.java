@@ -78,7 +78,15 @@ public class Response {
     }
 
     public void write(HttpResponse response) {
-        ctx.getChannel().write(response);
+        if (isKeepAlive(request)) {
+            response.setHeader(HttpHeaders.Names.CONNECTION, "Keep-Alive");
+        }
+        setContentLength(response, response.getContent().readableBytes());
+
+        ChannelFuture future = ctx.getChannel().write(response);
+        if (!isKeepAlive(request)) {
+            future.addListener(ChannelFutureListener.CLOSE);
+        }
     }
 
     public void writeJSON(Object object) throws IOException {

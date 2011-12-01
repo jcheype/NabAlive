@@ -29,8 +29,8 @@ public class Request {
         if (request.getMethod() != HttpMethod.POST)
             this.parameters = qs.getParameters();
         else {
-            final QueryStringDecoder queryStringDecoder = new QueryStringDecoder("/?" + content);
-            this.parameters = queryStringDecoder.getParameters();
+            qs = new QueryStringDecoder("/?" + content);
+            this.parameters = qs.getParameters();
         }
     }
 

@@ -1,8 +1,11 @@
 package com.nabalive.server.web.controller;
 
 import com.google.common.base.CharMatcher;
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 import com.nabalive.common.server.MessageService;
 import com.nabalive.data.core.dao.NabaztagDAO;
+import com.nabalive.data.core.model.ApplicationConfig;
 import com.nabalive.data.core.model.Nabaztag;
 import com.nabalive.framework.web.Request;
 import com.nabalive.framework.web.Response;
@@ -16,16 +19,17 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.jboss.netty.handler.codec.http.HttpVersion;
+import org.jboss.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.util.*;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -53,21 +57,22 @@ public class NabaztagController {
 
     @PostConstruct
     void init() {
-        restHandler.get(new Route("/nabaztags") {
-            @Override
-            public void handle(Request request, Response response, Map<String, String> map) throws Exception {
-                Token token = TokenUtil.decode(checkNotNull(request.getParamOrHeader("token")), Token.class);
+        restHandler
+                .get(new Route("/nabaztags") {
+                    @Override
+                    public void handle(Request request, Response response, Map<String, String> map) throws Exception {
+                        Token token = TokenUtil.decode(checkNotNull(request.getParamOrHeader("token")), Token.class);
 
-                List<Nabaztag> nabaztagList = nabaztagDAO.find(nabaztagDAO.createQuery().filter("owner", token.getUserId())).asList();
-                for(Nabaztag nabaztag: nabaztagList){
-                    if(connectionManager.containsKey(nabaztag.getMacAddress())){
-                        nabaztag.setConnected(true);
+                        List<Nabaztag> nabaztagList = nabaztagDAO.find(nabaztagDAO.createQuery().filter("owner", token.getUserId())).asList();
+                        for (Nabaztag nabaztag : nabaztagList) {
+                            if (connectionManager.containsKey(nabaztag.getMacAddress())) {
+                                nabaztag.setConnected(true);
+                            }
+                        }
+                        response.writeJSON(nabaztagList);
                     }
-                }
-                response.writeJSON(nabaztagList);
-            }
-        })
-                .post(new Route("/nabaztags", ".*/json") {
+                })
+                .post(new Route("/nabaztags", ".*/json.*") {
                     @Override
                     public void handle(Request request, Response response, Map<String, String> map) throws Exception {
                         Token token = TokenUtil.decode(checkNotNull(request.getParamOrHeader("token")), Token.class);
@@ -103,13 +108,77 @@ public class NabaztagController {
                         response.writeJSON(nabaztag);
                     }
                 })
-                .delete(new Route("/nabaztags/:id") {
+                .post(new Route("/nabaztags/:mac/addconfig") {
+                    @Override
+                    public void handle(Request request, Response response, Map<String, String> map) throws Exception {
+                        Token token = TokenUtil.decode(checkNotNull(request.getParamOrHeader("token")), Token.class);
+                        List<String> tags = request.parameters.get("rfid");
+                        String appApikey = checkNotNull(request.getParam("apikey"));
+                        String name = checkNotNull(request.getParam("name"));
+                        String appName = checkNotNull(request.getParam("appName"));
+                        String uuid = request.getParam("uuid");
+                        String mac = checkNotNull(map.get("mac"));
+                        Nabaztag nabaztag = checkNotNull(nabaztagDAO.findOne("macAddress", mac));
+
+                        if (!nabaztag.getOwner().equals(token.getUserId()))
+                            throw new IllegalArgumentException();
+
+                        Iterator<ApplicationConfig> iterator = nabaztag.getApplicationConfigList().iterator();
+                        while (iterator.hasNext()) {
+                            ApplicationConfig next = iterator.next();
+                            if (tags != null)
+                                next.getTags().removeAll(tags);
+                            if (next.getUuid().equals(uuid))
+                                iterator.remove();
+                        }
+                        ApplicationConfig config = new ApplicationConfig();
+                        config.setApplicationStoreApikey(appApikey);
+                        config.getTags().clear();
+                        if (tags != null)
+                            config.getTags().addAll(tags);
+
+                        for (Map.Entry<String, List<String>> entry : request.parameters.entrySet()) {
+                            if (entry.getKey().startsWith("parameter.")) {
+                                String key = entry.getKey().substring("parameter.".length());
+                                config.getParameters().put(key, entry.getValue());
+                            }
+                        }
+
+                        config.setName(name);
+                        config.setAppName(appName);
+
+                        nabaztag.addApplicationConfig(config);
+
+                        nabaztagDAO.save(nabaztag);
+                        response.writeJSON(nabaztag);
+                    }
+                })
+                .delete(new Route("/config/:uuid") {
+                    @Override
+                    public void handle(Request request, Response response, Map<String, String> map) throws Exception {
+                        Token token = TokenUtil.decode(checkNotNull(request.getParamOrHeader("token")), Token.class);
+                        String uuid = checkNotNull(map.get("uuid"));
+                        Nabaztag nabaztag = checkNotNull(nabaztagDAO.findOne("applicationConfigList.uuid", uuid));
+                        if (!nabaztag.getOwner().equals(token.getUserId()))
+                            throw new IllegalArgumentException();
+
+                        Iterator<ApplicationConfig> iterator = nabaztag.getApplicationConfigList().iterator();
+                        while (iterator.hasNext()) {
+                            ApplicationConfig next = iterator.next();
+                            if (next.getUuid().equals(uuid))
+                                iterator.remove();
+                        }
+                        nabaztagDAO.save(nabaztag);
+                        response.writeJSON(nabaztag);
+                    }
+                })
+                .delete(new Route("/nabaztags/:mac") {
                     @Override
                     public void handle(Request request, Response response, Map<String, String> map) throws Exception {
                         Token token = TokenUtil.decode(checkNotNull(request.getParamOrHeader("token")), Token.class);
 
-                        String id = checkNotNull(map.get("id"));
-                        Nabaztag nabaztag = checkNotNull(nabaztagDAO.get(new ObjectId(id)));
+                        String mac = checkNotNull(map.get("mac"));
+                        Nabaztag nabaztag = checkNotNull(nabaztagDAO.findOne("macAddress", mac));
                         if (token.getUserId().equals(nabaztag.getOwner())) {
                             nabaztagDAO.delete(nabaztag);
                             response.writeJSON("ok");
@@ -122,17 +191,61 @@ public class NabaztagController {
                     @Override
                     public void handle(Request request, Response response, Map<String, String> map) throws Exception {
                         String apikey = checkNotNull(map.get("apikey"));
-                        String url = checkNotNull(request.getParam("url"));
+                        List<String> urlList = checkNotNull(request.qs.getParameters().get("url"));
                         Nabaztag nabaztag = checkNotNull(nabaztagDAO.findOne("apikey", apikey));
 
-                        String urlSanitized = CharMatcher.isNot('\n').retainFrom(url);
+                        List<String> urlListSanitized = Lists.transform(urlList, new Function<String, String>() {
+                            @Override
+                            public String apply(@Nullable String url) {
+                                return CharMatcher.isNot('\n').retainFrom(url);
+                            }
+                        });
+                        StringBuilder commands = new StringBuilder();
+                        for (String url : urlListSanitized) {
+                            commands.append("ST " + url + "\nMW\n");
+                        }
+                        logger.debug("COMMAND: {}" + commands);
+                        messageService.sendMessage(nabaztag.getMacAddress(), commands.toString());
+                        response.writeJSON("ok");
+                    }
+                })
+                .get(new Route("/nabaztags/:apikey/tts/:voice") {
+                    @Override
+                    public void handle(Request request, Response response, Map<String, String> map) throws Exception {
+                        String apikey = checkNotNull(map.get("apikey"));
+                        String text = checkNotNull(request.getParam("text"));
+                        String voice = checkNotNull(map.get("voice"));
+                        Nabaztag nabaztag = checkNotNull(nabaztagDAO.findOne("apikey", apikey));
+
+                        String host = request.request.getHeader("Host");
+                        tts(nabaztag, host, voice, text);
+
+                        response.writeJSON("ok");
+                    }
+                })
+                .get(new Route("/nabaztags/:apikey/exec") {
+                    @Override
+                    public void handle(Request request, Response response, Map<String, String> map) throws Exception {
+                        String apikey = checkNotNull(map.get("apikey"));
+                        String command = checkNotNull(request.getParam("command"));
+                        Nabaztag nabaztag = checkNotNull(nabaztagDAO.findOne("apikey", apikey));
 
                         Random randomGenerator = new Random();
-                        String commande = "ST " + urlSanitized + "\nPL " + randomGenerator.nextInt(8) + "\nMW\n";
-                        logger.debug("COMMAND: " + commande);
-                        messageService.sendMessage(nabaztag.getMacAddress(), commande);
+                        logger.debug("COMMAND: " + command);
+                        messageService.sendMessage(nabaztag.getMacAddress(), command);
                         response.writeJSON("ok");
                     }
                 });
+    }
+
+    public void tts(Nabaztag nabaztag, String host, String voice, String text) throws Exception {
+        StringBuilder commands = new StringBuilder();
+        String encodedText = URLEncoder.encode(text, "UTF-8");
+        String url = "http://" + host + "/tts/" + nabaztag.getApikey() + "/" + voice + "?text=" + encodedText;
+
+        commands.append("MC " + url + "\nMW\n");
+
+        logger.debug("COMMAND: {}" + commands);
+        messageService.sendMessage(nabaztag.getMacAddress(), commands.toString());
     }
 }

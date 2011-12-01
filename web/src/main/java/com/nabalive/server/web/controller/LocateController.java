@@ -1,6 +1,9 @@
 package com.nabalive.server.web.controller;
 
 import com.google.common.io.ByteStreams;
+import com.nabalive.application.core.Application;
+import com.nabalive.application.core.ApplicationManager;
+import com.nabalive.data.core.model.ApplicationConfig;
 import com.nabalive.framework.web.Request;
 import com.nabalive.framework.web.Response;
 import com.nabalive.framework.web.Route;
@@ -19,6 +22,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
  * Created by IntelliJ IDEA.
  * User: Julien Cheype
@@ -31,35 +36,39 @@ public class LocateController {
     @Autowired
     private SimpleRestHandler restHandler;
 
+    @Autowired
+    private ApplicationManager applicationManager;
+
     private final Pattern domainPattern = Pattern.compile("([^:]+)");
 
     @PostConstruct
     void init() {
-        restHandler.get(new Route("/vl/locate.jsp.*") {
-            @Override
-            public void handle(Request request, Response response, Map<String, String> map) throws Exception {
-                String host = request.request.getHeader("Host");
-                logger.debug("host: {}", host);
-                Matcher matcher = domainPattern.matcher(host);
-                if (matcher.find()) {
-                    String domain = matcher.group(1);
-                    StringBuilder sb = new StringBuilder();
-                    sb.append("ping "+domain+"\n");
-                    sb.append("broad "+domain+"\n");
-                    sb.append("xmpp_domain "+domain+"\n");
-                    response.write(sb.toString());
-                } else {
-                    response.write(new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR));
-                }
-            }
-        })
-        .get(new Route("/vl/bc.jsp.*") {
-            @Override
-            public void handle(Request request, Response response, Map<String, String> map) throws Exception {
-                InputStream resourceAsStream = getClass().getResourceAsStream("/bc.jsp");
+        restHandler
+                .get(new Route("/vl/locate.jsp") {
+                    @Override
+                    public void handle(Request request, Response response, Map<String, String> map) throws Exception {
+                        String host = request.request.getHeader("Host");
+                        logger.debug("host: {}", host);
+                        Matcher matcher = domainPattern.matcher(host);
+                        if (matcher.find()) {
+                            String domain = matcher.group(1);
+                            StringBuilder sb = new StringBuilder();
+                            sb.append("ping " + domain + "\n");
+                            sb.append("broad " + domain + "\n");
+                            sb.append("xmpp_domain " + domain + "\n");
+                            response.write(sb.toString());
+                        } else {
+                            response.write(new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR));
+                        }
+                    }
+                })
+                .get(new Route("/vl/bc.jsp") {
+                    @Override
+                    public void handle(Request request, Response response, Map<String, String> map) throws Exception {
+                        InputStream resourceAsStream = getClass().getResourceAsStream("/bc.jsp");
 
-                response.write(ByteStreams.toByteArray(resourceAsStream));
-            }
-        });
+                        response.write(ByteStreams.toByteArray(resourceAsStream));
+                    }
+                });
     }
 }

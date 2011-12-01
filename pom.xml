@@ -10,6 +10,7 @@
     <name>Nabalive</name>
 
     <modules>
+        <module>applications</module>
         <module>jabber-server</module>
         <module>data-core</module>
         <module>common</module>

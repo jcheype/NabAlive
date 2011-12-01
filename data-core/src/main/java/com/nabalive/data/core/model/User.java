@@ -22,7 +22,6 @@ import java.util.Arrays;
 @Entity("user")
 public class User {
 
-
     @Id
     private ObjectId id;
 

@@ -1,0 +1,38 @@
+.row
+    .span8= name
+    .span8 APIKEY: #{apikey}
+    
+.row
+    .span8
+        %form.play(action="#" onsubmit="return false")
+            %fieldset
+                %legend Play sound
+                .clearfix
+                    %label(for='url') url:
+                    %input.play(type='text' name='url')
+                .actions
+                    %input.btn.primary(type="submit" value="Play")
+
+.row
+    .span8
+        %form.tts(action="#" onsubmit="return false")
+            %fieldset
+                %legend TTS
+                .clearfix
+                    %label(for='command') command:
+                    %textarea.tts(name="comments" cols="40" name='command')
+                .actions
+                    %input.btn.primary(type="submit" value="tts")
+                    
+.row
+    .span8
+        %form.exec(action="#" onsubmit="return false")
+            %fieldset
+                %legend Exec command
+                .clearfix
+                    %label(for='command') command:
+                    %textarea.command(name="comments" cols="40" name='command')
+                .actions
+                    %input.btn.primary(type="submit" value="Exec")
+
+%a.btn(href="#nabaztag/list") Back

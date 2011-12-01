@@ -34,6 +34,9 @@ public class Nabaztag {
     @Embedded()
     List<ApplicationConfig> applicationConfigList = new ArrayList<ApplicationConfig>();
 
+    List<String> tags = new ArrayList<String>();
+
+
     public ObjectId getId() {
         return id;
     }
@@ -47,7 +50,7 @@ public class Nabaztag {
     }
 
     public void setMacAddress(String macAddress) {
-        this.macAddress = macAddress;
+        this.macAddress = macAddress.toLowerCase();
     }
 
     public String getName() {
@@ -94,7 +97,7 @@ public class Nabaztag {
     }
 
     public void setApikey(String apikey) {
-        this.apikey = apikey;
+        this.apikey = apikey.toLowerCase();
     }
 
     public String getIdString() {
@@ -111,5 +114,13 @@ public class Nabaztag {
 
     public void setConnected(boolean connected) {
         this.connected = connected;
+    }
+
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public void setTags(List<String> tags) {
+        this.tags = tags;
     }
 }

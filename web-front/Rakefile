@@ -18,7 +18,7 @@ CLOBBER.include(CSS, JS)
 
 rule '.css' => '.less' do |t|
    puts "  LESS #{t.source}"
-   sh 'lessc', '-x',t.source, "public/css/#{t.name[5..-1]}"
+   sh 'lessc', '-x',t.source, "css/#{t.name[5..-1]}"
 end
 
 rule '.js' => '.coffee' do |t|
@@ -43,6 +43,7 @@ task :watch => [:default] do
 
     def rebuild
         sh 'rake'
+        sh 'haml' , '-t', 'ugly', "index.haml", "public/index.html"
         sh 'jammit'
         
         puts "    OK"

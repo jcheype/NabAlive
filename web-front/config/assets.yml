@@ -7,17 +7,21 @@ javascripts:
         - lib/underscore.js
         - lib/haml.js
         - lib/backbone-min.js
+    template:
+        - template/**/*.haml
     app:
         - javascript/model/**/*.js
         - javascript/view/**/*.js
         - javascript/main.js
         - javascript/route.js
-    template:
-        - template/**/*.haml
 
+stylesheets:
+    common:
+        - css/bootstrap.min.css
+        - css/main.css
 
 template_extension: haml
 template_function: Haml
 javascript_compressor: uglifier
 compress_assets: off
-gzip_assets: off
+gzip_assets: on

@@ -83,7 +83,7 @@
                 </configuration>
             </plugin>
 
-            <plugin>
+            <!--<plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
                     <archive>
@@ -98,15 +98,15 @@
                 <executions>
                     <execution>
                         <id>make-assembly</id>
-                        <!-- this is used for inheritance merges -->
+                        &lt;!&ndash; this is used for inheritance merges &ndash;&gt;
                         <phase>package</phase>
-                        <!-- bind to the packaging phase -->
+                        &lt;!&ndash; bind to the packaging phase &ndash;&gt;
                         <goals>
                             <goal>single</goal>
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
+            </plugin>-->
         </plugins>
     </build>
 </project>

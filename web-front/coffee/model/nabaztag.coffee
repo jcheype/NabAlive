@@ -2,14 +2,22 @@ class Nabaztag extends Backbone.Model
     urlRoot: "/nabaztags"
          
     initialize: (attributes) =>
-        # console.log(attributes)
-        @set({id: attributes.idString})
+        @set({id: attributes.macAddress})
         
     stream: (url, success)=>
         apikey = @get("apikey")
         jQuery.getJSON( "/nabaztags/#{apikey}/play", {"url": url}, success)
         
+    tts: (text, success)=>
+        apikey = @get("apikey")
+        jQuery.getJSON( "/nabaztags/#{apikey}/tts/fr", {"text": text}, success)
+        
+    exec: (command, success)=>
+        apikey = @get("apikey")
+        jQuery.getJSON( "/nabaztags/#{apikey}/exec", {"command": command}, success)
+        
 this.Nabaztag = Nabaztag
+
 
 class NabaztagCollection extends  Backbone.Collection
     model: Nabaztag
@@ -19,7 +27,7 @@ class NabaztagCollection extends  Backbone.Collection
         nab = @get(id)
         if(!nab)
             @fetch({success: =>
-                console.log("collection: ", this)
+                console?.log("collection: ", this)
                 nab = @get(id)
                 success(nab)
             ,error: error

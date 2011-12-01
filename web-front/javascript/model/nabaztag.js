@@ -11,6 +11,8 @@
   Nabaztag = (function() {
     __extends(Nabaztag, Backbone.Model);
     function Nabaztag() {
+      this.exec = __bind(this.exec, this);
+      this.tts = __bind(this.tts, this);
       this.stream = __bind(this.stream, this);
       this.initialize = __bind(this.initialize, this);
       Nabaztag.__super__.constructor.apply(this, arguments);
@@ -18,7 +20,7 @@
     Nabaztag.prototype.urlRoot = "/nabaztags";
     Nabaztag.prototype.initialize = function(attributes) {
       return this.set({
-        id: attributes.idString
+        id: attributes.macAddress
       });
     };
     Nabaztag.prototype.stream = function(url, success) {
@@ -26,6 +28,20 @@
       apikey = this.get("apikey");
       return jQuery.getJSON("/nabaztags/" + apikey + "/play", {
         "url": url
+      }, success);
+    };
+    Nabaztag.prototype.tts = function(text, success) {
+      var apikey;
+      apikey = this.get("apikey");
+      return jQuery.getJSON("/nabaztags/" + apikey + "/tts/fr", {
+        "text": text
+      }, success);
+    };
+    Nabaztag.prototype.exec = function(command, success) {
+      var apikey;
+      apikey = this.get("apikey");
+      return jQuery.getJSON("/nabaztags/" + apikey + "/exec", {
+        "command": command
       }, success);
     };
     return Nabaztag;
@@ -45,7 +61,9 @@
       if (!nab) {
         return this.fetch({
           success: __bind(function() {
-            console.log("collection: ", this);
+            if (typeof console !== "undefined" && console !== null) {
+              console.log("collection: ", this);
+            }
             nab = this.get(id);
             return success(nab);
           }, this),

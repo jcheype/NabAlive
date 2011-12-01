@@ -1,7 +1,5 @@
 package com.nabalive.server.web.controller;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.MapMaker;
 import com.nabalive.data.core.dao.UserDAO;
 import com.nabalive.data.core.model.User;
 import com.nabalive.framework.web.Request;
@@ -16,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.util.HashMap;
 import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;

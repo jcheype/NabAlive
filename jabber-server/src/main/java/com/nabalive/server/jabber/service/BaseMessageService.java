@@ -1,6 +1,7 @@
 package com.nabalive.server.jabber.service;
 
 import com.nabalive.common.server.MessageService;
+import com.nabalive.common.server.Packet;
 import com.nabalive.server.jabber.ConnectionManager;
 import com.nabalive.server.jabber.Status;
 import com.nabalive.server.jabber.packet.MessagePacket;
@@ -8,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Random;
+import java.util.concurrent.ExecutionException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -24,13 +26,14 @@ public class BaseMessageService implements MessageService {
 
     @Override
     public void sendMessage(String to, String message) {
-        Status status = checkNotNull(connectionManager.get(to));
-
-        //final String commande = "ST http://zenradio.fr:8800\nPL " + randomGenerator.nextInt(8) + "\nMW\n";
         final MessagePacket messagePacket = new MessagePacket(message);
+        sendMessage(to, messagePacket);
+    }
 
-        String xmpp = messagePacket.getXmpp("www.nabalive.server.jabber", status.getJid().toString());
-
+    @Override
+    public void sendMessage(String to, Packet message){
+        Status status = checkNotNull(connectionManager.get(to));
+        String xmpp = message.getXmpp("www.nabalive.server.jabber", status.getJid().toString());
         status.write(xmpp);
     }
 }

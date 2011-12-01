@@ -1,12 +1,8 @@
 package com.nabalive.server.jabber;
 
-import org.jboss.netty.channel.ChannelHandlerContext;
 import org.springframework.stereotype.Component;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by IntelliJ IDEA.
@@ -16,53 +12,53 @@ import java.util.Set;
 
 @Component
 public class ConnectionManager {
-    private final Map<String, Status> connectionMap = new HashMap<String, Status>();
+    private final Map<String, Status> connectionMapByMac = new HashMap<String, Status>();
 
     public int size() {
-        return connectionMap.size();
+        return connectionMapByMac.size();
     }
 
     public boolean isEmpty() {
-        return connectionMap.isEmpty();
+        return connectionMapByMac.isEmpty();
     }
 
     public boolean containsKey(Object key) {
-        return connectionMap.containsKey(key);
+        return connectionMapByMac.containsKey(key);
     }
 
     public boolean containsValue(Object value) {
-        return connectionMap.containsValue(value);
+        return connectionMapByMac.containsValue(value);
     }
 
     public Status get(Object key) {
-        return connectionMap.get(key);
+        return connectionMapByMac.get(key);
     }
 
     public Status put(String key, Status value) {
-        return connectionMap.put(key, value);
+        return connectionMapByMac.put(key, value);
     }
 
     public Status remove(Object key) {
-        return connectionMap.remove(key);
+        return connectionMapByMac.remove(key);
     }
 
     public void putAll(Map<? extends String, ? extends Status> m) {
-        connectionMap.putAll(m);
+        connectionMapByMac.putAll(m);
     }
 
     public void clear() {
-        connectionMap.clear();
+        connectionMapByMac.clear();
     }
 
     public Set<String> keySet() {
-        return connectionMap.keySet();
+        return connectionMapByMac.keySet();
     }
 
     public Collection<Status> values() {
-        return connectionMap.values();
+        return connectionMapByMac.values();
     }
 
     public Set<Map.Entry<String, Status>> entrySet() {
-        return connectionMap.entrySet();
+        return connectionMapByMac.entrySet();
     }
 }
