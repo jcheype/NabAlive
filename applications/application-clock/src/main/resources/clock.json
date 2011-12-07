@@ -1,0 +1,23 @@
+{"fields":[
+    {
+        "type":"INPUT",
+        "label":"TimeZone",
+        "name":"tz",
+        "values":[ ]
+    },
+    {
+        "type":"SELECT",
+        "label":"Langue",
+        "name":"lang",
+        "values":[
+            "br",
+            "de",
+            "es",
+            "fr",
+            "it",
+            "ja-JP",
+            "uk",
+            "us"
+        ]
+    }
+]}

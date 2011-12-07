@@ -1,0 +1,24 @@
+{
+    "triggers":[ "RFID" ],
+    "fields":[
+        {
+            "type":"SELECT",
+            "label":"Signe",
+            "name":"sign",
+            "values":[
+                "belier",
+                "taureau",
+                "gemeaux",
+                "cancer",
+                "lion",
+                "vierge",
+                "balance",
+                "scorpion",
+                "sagittaire",
+                "capricorne",
+                "verseau",
+                "poissons"
+            ]
+        }
+    ]
+}

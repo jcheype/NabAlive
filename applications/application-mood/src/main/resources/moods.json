@@ -1,0 +1,17 @@
+{   "triggers":[ "RFID", "PERMANENT" ],
+    "fields":{
+        "type":"SELECT",
+        "label":"Langue",
+        "name":"lang",
+        "values":[
+            "br",
+            "de",
+            "es",
+            "fr",
+            "it",
+            "ja-JP",
+            "uk",
+            "us"
+        ]
+    }
+}

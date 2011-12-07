@@ -52,7 +52,7 @@ public class RfidController {
                 .get(new Route("/vl/rfid.jsp") {
                     @Override
                     public void handle(Request request, Response response, Map<String, String> map) throws Exception {
-                        String mac = checkNotNull(request.getParam("sn"));
+                        String mac = checkNotNull(request.getParam("sn")).toLowerCase();
                         String tag = checkNotNull(request.getParam("t")).toLowerCase();
                         String host = request.request.getHeader("Host");
 
@@ -66,7 +66,7 @@ public class RfidController {
                                 if (applicationConfig.getTags().contains(tag)) {
                                     String apikey = applicationConfig.getApplicationStoreApikey();
                                     Application application = applicationManager.getApplication(apikey);
-                                    application.onStartup(mac, applicationConfig);
+                                    application.onStartup(nabaztag, applicationConfig);
                                     response.write("ok");
                                     return;
                                 }

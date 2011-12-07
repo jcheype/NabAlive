@@ -12,6 +12,10 @@ class Nabaztag extends Backbone.Model
         apikey = @get("apikey")
         jQuery.getJSON( "/nabaztags/#{apikey}/tts/fr", {"text": text}, success)
         
+    subscribe: (email, success)=>
+        apikey = @get("apikey")
+        jQuery.getJSON( "/nabaztags/#{apikey}/subscribe", {"email": email}, success)
+    
     exec: (command, success)=>
         apikey = @get("apikey")
         jQuery.getJSON( "/nabaztags/#{apikey}/exec", {"command": command}, success)

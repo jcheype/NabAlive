@@ -37,9 +37,9 @@ public class ApplicationScheduler {
     private final String CLOCK_APIKEY = "23FE2439-C6E4-4E8D-BE1B-423EA6106CFA";
     private final String MOOD_APIKEY = "BC330670-6D25-4FB7-8613-EFD384D035E1";
 
-    private ApplicationConfig findClockConfig(List<ApplicationConfig> applicationConfigList) {
+    private ApplicationConfig findClockConfig(String apikey, List<ApplicationConfig> applicationConfigList) {
         for (ApplicationConfig config : applicationConfigList) {
-            if (CLOCK_APIKEY.equalsIgnoreCase(config.getApplicationStoreApikey())) {
+            if (apikey.equalsIgnoreCase(config.getApplicationStoreApikey())) {
                 return config;
             }
         }
@@ -56,10 +56,9 @@ public class ApplicationScheduler {
         Iterator<Nabaztag> iterator = nabaztagDAO.find(query).iterator();
         while (iterator.hasNext()) {
             Nabaztag nabaztag = iterator.next();
-            String mac = nabaztag.getMacAddress();
-            if (connectionManager.containsKey(mac)) {
+            if (connectionManager.containsKey(nabaztag.getMacAddress())) {
                 try {
-                    application.onStartup(mac, findClockConfig(nabaztag.getApplicationConfigList()));
+                    application.onStartup(nabaztag, findClockConfig(CLOCK_APIKEY, nabaztag.getApplicationConfigList()));
                 } catch (Exception e) {
                     logger.debug("cannot send message", e);
                 }
@@ -77,11 +76,10 @@ public class ApplicationScheduler {
         Iterator<Nabaztag> iterator = nabaztagDAO.find(query).iterator();
         while (iterator.hasNext()) {
             Nabaztag nabaztag = iterator.next();
-            String mac = nabaztag.getMacAddress();
-            if (connectionManager.containsKey(mac)) {
+            if (connectionManager.containsKey(nabaztag.getMacAddress())) {
                 if (rand.nextInt(3) == 0){
                     try {
-                        application.onStartup(mac, null);
+                        application.onStartup(nabaztag, findClockConfig(MOOD_APIKEY, nabaztag.getApplicationConfigList()));
                     } catch (Exception e) {
                         logger.debug("cannot send message", e);
                     }

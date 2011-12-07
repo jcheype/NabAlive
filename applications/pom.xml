@@ -17,6 +17,7 @@
         <module>application-meteo</module>
         <module>application-clock</module>
         <module>application-mood</module>
+        <module>application-horoscope</module>
     </modules>
 
     <properties>

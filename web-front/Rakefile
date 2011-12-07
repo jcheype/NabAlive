@@ -1,30 +1,22 @@
 require 'rake/clean'
 
-#HAML   = FileList['**/*.haml']
 LESS   = FileList['less/**/*.less']
 COFFEE = FileList['coffee/**/*.coffee']
 
-#HTML = HAML.ext('html')
 CSS  = LESS.ext('css')
 JS   = COFFEE.ext('js')
 
-#CLOBBER.include(HTML, CSS, JS)
 CLOBBER.include(CSS, JS)
-
-#rule '.html' => '.haml' do |t|
-#   puts "  HAML #{t.source}"
-#   sh 'haml', t.source, t.name
-#end
 
 rule '.css' => '.less' do |t|
    puts "  LESS #{t.source}"
-   sh 'lessc', '-x',t.source, "css/#{t.name[5..-1]}"
+   sh "mkdir", "-p", "tmp/css"
+   sh 'lessc', '-x',t.source, "tmp/css/#{t.name[5..-1]}"
 end
 
 rule '.js' => '.coffee' do |t|
    puts "COFFEE #{t.source}"
-   sh 'coffee', '-o', "javascript/#{File.dirname(t.name[7..-1])}" , '-c', t.source
-#   sh 'uglifyjs', '--overwrite', "javascript/#{t.name[7..-1]}"  
+   sh 'coffee', '-o', "tmp/javascript/#{File.dirname(t.name[7..-1])}" , '-c', t.source
 end
 
 desc "Package assets"
@@ -32,18 +24,24 @@ task :after do
   sh 'jammit'
 end
 
+desc "clean"
+task :clean do
+  sh "rm", "-rf", "tmp"
+  sh "rm", "-rf", "public/*"
+end
+
 desc "Build all HTML, CSS and JavaScript files"
-#task :default => (HTML + CSS + JS)
 task :default => (CSS + JS)
 
 desc "Continuously watch for changes and rebuild files"
-task :watch => [:default] do
+task :watch => [] do
     require 'rubygems'
     require 'fssm'
 
     def rebuild
-        sh 'rake'
+        sh 'rake clean default'
         sh 'haml' , '-t', 'ugly', "index.haml", "public/index.html"
+        sh "cp", "-rf", "image", "public"
         sh 'jammit'
         
         puts "    OK"
@@ -52,6 +50,7 @@ task :watch => [:default] do
     end
 
     begin
+        rebuild
         FSSM.monitor(nil, ['**/*.coffee', '**/*.haml', '**/*.less']) do
             update { rebuild }
             delete { rebuild }
@@ -60,8 +59,5 @@ task :watch => [:default] do
     rescue FSSM::CallbackError => e
         Process.exit
     end
+
 end
-#
-#current_tasks =  Rake.application.top_level_tasks
-#current_tasks << :after
-#Rake.application.instance_variable_set(:@top_level_tasks, current_tasks)

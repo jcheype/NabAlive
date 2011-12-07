@@ -1,12 +1,15 @@
 package com.nabalive.server.web.controller;
 
+import com.google.code.morphia.query.Query;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.nabalive.common.server.MessageService;
 import com.nabalive.data.core.dao.NabaztagDAO;
+import com.nabalive.data.core.dao.UserDAO;
 import com.nabalive.data.core.model.ApplicationConfig;
 import com.nabalive.data.core.model.Nabaztag;
+import com.nabalive.data.core.model.User;
 import com.nabalive.framework.web.Request;
 import com.nabalive.framework.web.Response;
 import com.nabalive.framework.web.Route;
@@ -48,6 +51,9 @@ public class NabaztagController {
 
     @Autowired
     NabaztagDAO nabaztagDAO;
+    
+    @Autowired
+    UserDAO userDAO;
 
     @Autowired
     ConnectionManager connectionManager;
@@ -204,7 +210,7 @@ public class NabaztagController {
                         for (String url : urlListSanitized) {
                             commands.append("ST " + url + "\nMW\n");
                         }
-                        logger.debug("COMMAND: {}" + commands);
+                        logger.debug("COMMAND: {}" , commands);
                         messageService.sendMessage(nabaztag.getMacAddress(), commands.toString());
                         response.writeJSON("ok");
                     }
@@ -230,11 +236,32 @@ public class NabaztagController {
                         String command = checkNotNull(request.getParam("command"));
                         Nabaztag nabaztag = checkNotNull(nabaztagDAO.findOne("apikey", apikey));
 
-                        Random randomGenerator = new Random();
-                        logger.debug("COMMAND: " + command);
+                        logger.debug("COMMAND: {}" , command);
                         messageService.sendMessage(nabaztag.getMacAddress(), command);
                         response.writeJSON("ok");
                     }
+                })
+                .get(new Route("/nabaztags/:apikey/subscribe") {
+                    @Override
+                    public void handle(Request request, Response response, Map<String, String> map) throws Exception {
+                        String apikey = checkNotNull(map.get("apikey"));
+                        String email = checkNotNull(request.getParam("email"));
+                        Nabaztag nabaztag = checkNotNull(nabaztagDAO.findOne("apikey", apikey));
+
+                        User user = checkNotNull(userDAO.findOne("email", email));
+                        Query<Nabaztag> query = nabaztagDAO.createQuery().filter("owner", user.getId());
+                        for(Nabaztag nab : nabaztagDAO.find(query).asList()){
+
+                            List<ObjectId> subscribe = nabaztag.getSubscribe();
+                            if(!subscribe.contains(nab.getId()))
+                                subscribe.add(nab.getId());
+                        }
+
+                        nabaztagDAO.save(nabaztag);
+                        response.write("ok");
+                    }
+
+
                 });
     }
 
@@ -245,7 +272,7 @@ public class NabaztagController {
 
         commands.append("MC " + url + "\nMW\n");
 
-        logger.debug("COMMAND: {}" + commands);
+        logger.debug("COMMAND: {}" , commands);
         messageService.sendMessage(nabaztag.getMacAddress(), commands.toString());
     }
 }

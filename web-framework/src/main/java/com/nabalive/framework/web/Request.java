@@ -5,6 +5,8 @@ import org.jboss.netty.handler.codec.http.HttpMethod;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import org.jboss.netty.util.CharsetUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -15,6 +17,8 @@ import java.util.Map;
  * Date: 10/24/11
  */
 public class Request {
+    private static final Logger logger = LoggerFactory.getLogger(Request.class);
+
     public final ChannelHandlerContext ctx;
     public final HttpRequest request;
     public final QueryStringDecoder qs;
@@ -25,13 +29,21 @@ public class Request {
         this.ctx = ctx;
         this.request = request;
         this.qs = qs;
-        content = request.getContent().toString(CharsetUtil.UTF_8);
-        if (request.getMethod() != HttpMethod.POST)
-            this.parameters = qs.getParameters();
-        else {
-            qs = new QueryStringDecoder("/?" + content);
-            this.parameters = qs.getParameters();
+        Map<String, List<String>> parameters = qs.getParameters();
+        String content = null;
+        try {
+
+            content = request.getContent().toString(CharsetUtil.UTF_8);
+            if (request.getMethod() == HttpMethod.POST)
+                qs = new QueryStringDecoder("/?" + content);
+            parameters = qs.getParameters();
+
+        }catch(Exception e){
+            logger.debug("post request seems DATA");
+            logger.trace("error in parsing request", e);
         }
+        this.content = content;
+        this.parameters = parameters;
     }
 
     public String getParam(String key, String defaultValue) {
@@ -54,9 +66,9 @@ public class Request {
         return request.getHeader(key);
     }
 
-    public String getParamOrHeader(String key){
+    public String getParamOrHeader(String key) {
         String result = getParam(key);
-        if(result == null)
+        if (result == null)
             result = request.getHeader(key);
         return result;
     }

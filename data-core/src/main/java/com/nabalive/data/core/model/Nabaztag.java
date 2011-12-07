@@ -28,6 +28,9 @@ public class Nabaztag {
 
     private ObjectId owner;
 
+    @Indexed
+    private List<ObjectId> subscribe = new ArrayList<ObjectId>();
+
     @Transient
     private boolean connected = false;
 
@@ -122,5 +125,13 @@ public class Nabaztag {
 
     public void setTags(List<String> tags) {
         this.tags = tags;
+    }
+
+    public List<ObjectId> getSubscribe() {
+        return subscribe;
+    }
+
+    public void setSubscribe(List<ObjectId> subscribe) {
+        this.subscribe = subscribe;
     }
 }

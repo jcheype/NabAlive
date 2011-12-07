@@ -18,7 +18,12 @@ class NabaztagActionView extends Backbone.View
         text = $('textarea.tts').val()
         console?.log(text)
         @model.tts(text)
-        
+
+    subscribe: =>
+        email = $('input.subscribe').val()
+        console?.log(email)
+        @model.subscribe(email)
+    
     exec: =>
         command = $('.command').val()
         @model.exec(command)

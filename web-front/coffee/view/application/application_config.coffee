@@ -7,9 +7,8 @@ class ApplicationConfigView extends Backbone.View
     templateRfid: JST['application/config_rfid']
     
     templateInput: JST['application/config_input']
-    
+    templateSelect: JST['application/config_select']
 
-        
     
     initialize: (options)=>
         console?.log("model: ", @model)
@@ -53,7 +52,13 @@ class ApplicationConfigView extends Backbone.View
                 if @config
                     domField.find("input").val(@config.parameters[field.name])
                 form.append(domField)
-                
+            if field.type == "SELECT"
+                domField = $(@templateSelect(field))
+                select = domField.find("select")
+                _.each(field.values, (value) => select.append("<option value=\"#{value}\">#{value}</option>") )
+                if @config
+                    domField.find("select").val(@config.parameters[field.name])
+                form.append(domField)
         )
         
     isSelected: (tag) =>

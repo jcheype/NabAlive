@@ -1,7 +1,7 @@
 package com.nabalive.application.core;
 
 import com.nabalive.data.core.model.ApplicationConfig;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+import com.nabalive.data.core.model.Nabaztag;
 
 /**
  * Created by IntelliJ IDEA.
@@ -9,13 +9,13 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
  * Date: 11/18/11
  */
 public class ApplicationBase implements Application {
-    public void onStartup(String mac, ApplicationConfig applicationConfig) throws Exception {}
-    public void onButton(String mac, int clicks) throws Exception {}
-    public void onEars(String mac, int stepLeft, int stepRight) throws Exception {}
-    public void onRfid(String mac, String content) throws Exception {}
-    public void onPresence(String mac, String status) throws Exception {}
+    public void onStartup(Nabaztag nabaztag, ApplicationConfig applicationConfig) throws Exception {}
+    public void onButton(Nabaztag nabaztag, int clicks) throws Exception {}
+    public void onEars(Nabaztag nabaztag, int stepLeft, int stepRight) throws Exception {}
+    public void onRfid(Nabaztag nabaztag, String content) throws Exception {}
+    public void onPresence(Nabaztag nabaztag, String status) throws Exception {}
 
     @Override
-    public String getApikey() { throw new NotImplementedException(); }
+    public String getApikey() { throw new UnsupportedOperationException(); }
 
 }

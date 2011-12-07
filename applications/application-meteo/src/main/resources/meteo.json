@@ -1,0 +1,16 @@
+{ "triggers":[ "RFID" ],
+    "fields":[
+        {
+            "type":"INPUT",
+            "label":"City",
+            "name":"city",
+            "values":[ ]
+        },
+        {
+            "type":"INPUT",
+            "label":"Country",
+            "name":"country",
+            "values":[ ]
+        }
+    ]
+}

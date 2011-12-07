@@ -10,15 +10,15 @@ javascripts:
     template:
         - template/**/*.haml
     app:
-        - javascript/model/**/*.js
-        - javascript/view/**/*.js
-        - javascript/main.js
-        - javascript/route.js
+        - tmp/javascript/model/**/*.js
+        - tmp/javascript/view/**/*.js
+        - tmp/javascript/main.js
+        - tmp/javascript/route.js
 
 stylesheets:
     common:
         - css/bootstrap.min.css
-        - css/main.css
+        - tmp/css/main.css
 
 template_extension: haml
 template_function: Haml

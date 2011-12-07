@@ -7,6 +7,7 @@ import com.google.common.cache.CacheLoader;
 import com.nabalive.application.core.ApplicationBase;
 import com.nabalive.common.server.MessageService;
 import com.nabalive.data.core.model.ApplicationConfig;
+import com.nabalive.data.core.model.Nabaztag;
 import com.ning.http.client.AsyncCompletionHandler;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Response;
@@ -194,7 +195,7 @@ public class MeteoApplication extends ApplicationBase {
 
 
     @Override
-    public void onStartup(String mac, ApplicationConfig applicationConfig) throws Exception {
+    public void onStartup(Nabaztag nabaztag, ApplicationConfig applicationConfig) throws Exception {
         String city = checkNotNull(applicationConfig.getParameters().get("city")).get(0);
         String country = checkNotNull(applicationConfig.getParameters().get("country")).get(0);
         String unit;
@@ -207,9 +208,9 @@ public class MeteoApplication extends ApplicationBase {
 
         MeteoResult meteoResult = meteoCache.asMap().get(key);
         if (meteoResult == null) {
-            httpCall(mac, city, country, unit, key);
+            httpCall(nabaztag.getMacAddress(), city, country, unit, key);
         } else
-            sendMeteo(mac, meteoResult);
+            sendMeteo(nabaztag.getMacAddress(), meteoResult);
     }
 
     class MeteoResult {

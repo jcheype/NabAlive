@@ -3,6 +3,7 @@ package com.nabalive.applications.clock;
 import com.nabalive.application.core.ApplicationBase;
 import com.nabalive.common.server.MessageService;
 import com.nabalive.data.core.model.ApplicationConfig;
+import com.nabalive.data.core.model.Nabaztag;
 import com.ning.http.client.AsyncHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,8 +33,9 @@ public class ClockApplication extends ApplicationBase {
     }
 
     @Override
-    public void onStartup(String mac, ApplicationConfig applicationConfig) throws Exception {
+    public void onStartup(Nabaztag nabaztag, ApplicationConfig applicationConfig) throws Exception {
         String tzID = checkNotNull(applicationConfig.getParameters().get("tz").get(0));
+        String lang = checkNotNull(applicationConfig.getParameters().get("lang").get(0));
 
         TimeZone timeZone = checkNotNull(TimeZone.getTimeZone(tzID));
         Calendar cal = new GregorianCalendar(timeZone);
@@ -41,9 +43,12 @@ public class ClockApplication extends ApplicationBase {
 
         StringBuilder command = new StringBuilder();
 
-        command.append("MU http://karotz.s3.amazonaws.com/applications/clock/fr/signature.mp3\nPL 3\nMW\n");
-        command.append("MU http://karotz.s3.amazonaws.com/applications/clock/fr/"+((hour24+1)%24)+"/"+(rand.nextInt(4)+1)+".mp3\nPL 3\nMW\n");
+        String path = lang + "/" + ((hour24 + 1) % 24) + "/" + (rand.nextInt(4) + 1);
 
-        messageService.sendMessage(mac, command.toString());
+        command.append("MC http://karotz.s3.amazonaws.com/applications/clock/" + lang + "/signature.mp3\nMW\n");
+        command.append("CH http://karotz.s3.amazonaws.com/applications/clock/" + path + ".chor\n");
+        command.append("MC http://karotz.s3.amazonaws.com/applications/clock/" + path + ".mp3\nMW\n");
+
+        messageService.sendMessage(nabaztag.getMacAddress(), command.toString());
     }
 }
