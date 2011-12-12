@@ -66,7 +66,7 @@ public class ApplicationScheduler {
         }
     }
 
-    @Scheduled(fixedDelay = 60000)
+    @Scheduled(fixedDelay = 300000)
     public void mood() {
         logger.debug("mood trigger");
 
