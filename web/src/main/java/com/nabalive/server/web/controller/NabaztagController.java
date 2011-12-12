@@ -1,14 +1,19 @@
 package com.nabalive.server.web.controller;
 
 import com.google.code.morphia.query.Query;
+import com.google.code.morphia.query.UpdateOperations;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.nabalive.common.server.MessageService;
 import com.nabalive.data.core.dao.NabaztagDAO;
 import com.nabalive.data.core.dao.UserDAO;
 import com.nabalive.data.core.model.ApplicationConfig;
 import com.nabalive.data.core.model.Nabaztag;
+import com.nabalive.data.core.model.Subscription;
 import com.nabalive.data.core.model.User;
 import com.nabalive.framework.web.Request;
 import com.nabalive.framework.web.Response;
@@ -51,7 +56,7 @@ public class NabaztagController {
 
     @Autowired
     NabaztagDAO nabaztagDAO;
-    
+
     @Autowired
     UserDAO userDAO;
 
@@ -178,6 +183,20 @@ public class NabaztagController {
                         response.writeJSON(nabaztag);
                     }
                 })
+                .get(new Route("/nabaztags/:mac") {
+                    @Override
+                    public void handle(Request request, Response response, Map<String, String> map) throws Exception {
+                        Token token = TokenUtil.decode(checkNotNull(request.getParamOrHeader("token")), Token.class);
+
+                        String mac = checkNotNull(map.get("mac"));
+                        Nabaztag nabaztag = checkNotNull(nabaztagDAO.findOne("macAddress", mac));
+                        if (token.getUserId().equals(nabaztag.getOwner())) {
+                            response.writeJSON(nabaztag);
+                        } else {
+                            response.write(new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.UNAUTHORIZED));
+                        }
+                    }
+                })
                 .delete(new Route("/nabaztags/:mac") {
                     @Override
                     public void handle(Request request, Response response, Map<String, String> map) throws Exception {
@@ -210,7 +229,7 @@ public class NabaztagController {
                         for (String url : urlListSanitized) {
                             commands.append("ST " + url + "\nMW\n");
                         }
-                        logger.debug("COMMAND: {}" , commands);
+                        logger.debug("COMMAND: {}", commands);
                         messageService.sendMessage(nabaztag.getMacAddress(), commands.toString());
                         response.writeJSON("ok");
                     }
@@ -236,7 +255,7 @@ public class NabaztagController {
                         String command = checkNotNull(request.getParam("command"));
                         Nabaztag nabaztag = checkNotNull(nabaztagDAO.findOne("apikey", apikey));
 
-                        logger.debug("COMMAND: {}" , command);
+                        logger.debug("COMMAND: {}", command);
                         messageService.sendMessage(nabaztag.getMacAddress(), command);
                         response.writeJSON("ok");
                     }
@@ -247,21 +266,68 @@ public class NabaztagController {
                         String apikey = checkNotNull(map.get("apikey"));
                         String email = checkNotNull(request.getParam("email"));
                         Nabaztag nabaztag = checkNotNull(nabaztagDAO.findOne("apikey", apikey));
+                        Set<Subscription> subscriptionSet = nabaztag.getSubscribe();
 
                         User user = checkNotNull(userDAO.findOne("email", email));
                         Query<Nabaztag> query = nabaztagDAO.createQuery().filter("owner", user.getId());
-                        for(Nabaztag nab : nabaztagDAO.find(query).asList()){
+                        for (Nabaztag nab : nabaztagDAO.find(query).asList()) {
+                            Subscription subscription = new Subscription();
+                            subscription.setName(nab.getName());
+                            subscription.setOwnerFisrtName(user.getFirstname());
+                            subscription.setOwnerLastName(user.getLastname());
+                            subscription.setObjectId(nab.getId().toString());
 
-                            List<ObjectId> subscribe = nabaztag.getSubscribe();
-                            if(!subscribe.contains(nab.getId()))
-                                subscribe.add(nab.getId());
+                            subscriptionSet.add(subscription);
                         }
 
-                        nabaztagDAO.save(nabaztag);
-                        response.write("ok");
+                        UpdateOperations<Nabaztag> updateOperations = nabaztagDAO.createUpdateOperations().set("subscribe", subscriptionSet);
+                        nabaztagDAO.update(nabaztagDAO.createQuery().filter("_id", nabaztag.getId()), updateOperations);
+                        response.writeJSON("ok");
                     }
+                })
+                .delete(new Route("/nabaztags/:apikey/subscribe/:objectId") {
+                    @Override
+                    public void handle(Request request, Response response, Map<String, String> map) throws Exception {
+                        String apikey = checkNotNull(map.get("apikey"));
+                        String objectId = checkNotNull(map.get("objectId"));
+                        Nabaztag nabaztag = checkNotNull(nabaztagDAO.findOne("apikey", apikey));
+                        Set<Subscription> subscriptionSet = nabaztag.getSubscribe();
+
+                        Iterator<Subscription> iterator = subscriptionSet.iterator();
+                        while (iterator.hasNext()) {
+                            Subscription next = iterator.next();
+                            if (next.getObjectId().equals(objectId))
+                                iterator.remove();
+                        }
 
 
+                        UpdateOperations<Nabaztag> updateOperations = nabaztagDAO.createUpdateOperations().set("subscribe", subscriptionSet);
+                        nabaztagDAO.update(nabaztagDAO.createQuery().filter("_id", nabaztag.getId()), updateOperations);
+                        response.writeJSON("ok");
+                    }
+                })
+                .get(new Route("/nab2nabs/:apikey/send") {
+                    @Override
+                    public void handle(Request request, Response response, Map<String, String> map) throws Exception {
+                        String apikey = checkNotNull(map.get("apikey"));
+                        String url = checkNotNull(request.getParam("url"));
+                        Nabaztag nabaztag = checkNotNull(nabaztagDAO.findOne("apikey", apikey));
+                        Set<Subscription> subscriptionSet = nabaztag.getSubscribe();
+
+                        List<ObjectId> objectList = new ArrayList<ObjectId>();
+                        for(Subscription subscription: subscriptionSet){
+                            objectList.add(new ObjectId(subscription.getObjectId()));
+                        }
+                        List<Nabaztag> nabaztagList = nabaztagDAO.find(nabaztagDAO.createQuery().field("_id").in(objectList)).asList();
+                        
+                        String command = "ST " + url + "\nMW\n";
+                        for(Nabaztag nab : nabaztagList){
+                            if(connectionManager.containsKey(nab.getMacAddress()))
+                                messageService.sendMessage(nab.getMacAddress(), command);
+                        }
+
+                        response.writeJSON("ok");
+                    }
                 });
     }
 
@@ -272,7 +338,7 @@ public class NabaztagController {
 
         commands.append("MC " + url + "\nMW\n");
 
-        logger.debug("COMMAND: {}" , commands);
+        logger.debug("COMMAND: {}", commands);
         messageService.sendMessage(nabaztag.getMacAddress(), commands.toString());
     }
 }

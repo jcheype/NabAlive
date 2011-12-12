@@ -88,8 +88,10 @@ public class RecordController {
                         final String command = "ST " + url + "\nMW\n";
 
                         Query<Nabaztag> query = nabaztagDAO.createQuery();
-                        query.filter("subscribe", nabaztag.getId());
+                        query.filter("subscribe.objectId", nabaztag.getId().toString());
                         List<Nabaztag> nabaztags = nabaztagDAO.find(query).asList();
+
+
                         logger.debug("sending to {} subscribers", nabaztags.size());
                         for (Nabaztag nab : nabaztags) {
                             if (connectionManager.containsKey(nab.getMacAddress())) {
@@ -106,7 +108,7 @@ public class RecordController {
                                         }
                                     }
                                 };
-                                ses.schedule(runnable, 100, TimeUnit.MILLISECONDS);
+                                ses.schedule(runnable, 500, TimeUnit.MILLISECONDS);
                             }
                         }
                         response.write("ok");
