@@ -29,7 +29,7 @@ public class Nabaztag {
     private ObjectId owner;
 
     @Indexed
-    private List<ObjectId> subscribe = new ArrayList<ObjectId>();
+    private Set<Subscription> subscribe = new HashSet<Subscription>();
 
     @Transient
     private boolean connected = false;
@@ -127,11 +127,12 @@ public class Nabaztag {
         this.tags = tags;
     }
 
-    public List<ObjectId> getSubscribe() {
+    public Set<Subscription> getSubscribe() {
         return subscribe;
     }
 
-    public void setSubscribe(List<ObjectId> subscribe) {
+    public void setSubscribe(Set<Subscription> subscribe) {
         this.subscribe = subscribe;
     }
+
 }
