@@ -3,22 +3,38 @@ class Nabaztag extends Backbone.Model
          
     initialize: (attributes) =>
         @set({id: attributes.macAddress})
+        @bind('all', =>
+            console?.log("@attributes", @attributes)
+            @set({id: @attributes.macAddress})
+        )
         
-    stream: (url, success)=>
+    stream: (url, success, error)=>
         apikey = @get("apikey")
-        jQuery.getJSON( "/nabaztags/#{apikey}/play", {"url": url}, success)
+        $.get( "/nabaztags/#{apikey}/play", {"url": url}).success(=> success() if success ).error(=> error() if error)
         
-    tts: (text, success)=>
+    tts: (text, success, error)=>
         apikey = @get("apikey")
-        jQuery.getJSON( "/nabaztags/#{apikey}/tts/fr", {"text": text}, success)
+        $.get( "/nabaztags/#{apikey}/tts/fr", {"text": text}).success(=> success() if success ).error(=> error() if error)
         
-    subscribe: (email, success)=>
+    subscribe: (email, success, error)=>
         apikey = @get("apikey")
-        jQuery.getJSON( "/nabaztags/#{apikey}/subscribe", {"email": email}, success)
+        $.get( "/nabaztags/#{apikey}/subscribe", {"email": email})
+            .success(=> @fetch(); success() if success )
+            .error(=> @fetch(); error() if error)
+        
+    unsubscribe: (objectId, success, error)=>
+        apikey = @get("apikey")
+        $.ajax({
+            url: "/nabaztags/#{apikey}/subscribe/#{objectId}",
+            type: 'DELETE',
+            success: => success() if success,
+            error: => error() if error,
+            complete: => @fetch()
+        });
     
-    exec: (command, success)=>
+    exec: (command, success, error)=>
         apikey = @get("apikey")
-        jQuery.getJSON( "/nabaztags/#{apikey}/exec", {"command": command}, success)
+        $.get( "/nabaztags/#{apikey}/exec", {"command": command}).success(=> success() if success ).error(=> error() if error)
         
 this.Nabaztag = Nabaztag
 

@@ -1,0 +1,22 @@
+.nabaztagItem
+    .nab
+            .name= name
+            .action
+                .label.btn.info.tts tts
+                .label.btn.info.sound sound
+                .label.btn.info.list list
+    .forms
+        .sound
+            %form.sound(action="#" onsubmit="return false")
+                %input.url(type='text' name='url')
+                %input.btn.small.primary(type='submit' value='Send')
+        .tts
+            %form.tts(action="#" onsubmit="return false")
+                %input.text(type='text' name='url')
+                %input.btn.small.primary(type='submit' value='Send')
+        .list
+            %form.list(action="#" onsubmit="return false")
+                %input.email(type='text' name='email')
+                %input.btn.small.primary(type='submit' value='Add')
+            .subscriptions
+    

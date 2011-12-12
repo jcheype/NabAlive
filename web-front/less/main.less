@@ -36,7 +36,7 @@ input{
     }
 }
 
-.nabaztagCollection{
+.nabaztagCollection, .nab2nabs{
     .content{
         width: 100%;
         height: auto;
@@ -45,12 +45,26 @@ input{
         .nabaztagItem{
             float:left;
             width: 200px;
-            margin: 10px;
+            margin: 5px;
             padding: 10px;
             
             background-color: #eaeaea;
             .rounded-corners;
             .box-shadow(0, 0, 5px, 0.4);
+            
+            .forms{
+                >div{
+                    display:none;
+                }
+            }
+            
+            input[type=text]{
+                width:140px;
+            }
+            input.btn{
+                width:45px;
+            }
+            
             .nab{
                 width:100%;
                 height:20px;
@@ -66,11 +80,11 @@ input{
                 }
             }
             
-            .configItem{
+            .configItem, .subscribeItem{
                 margin-left:10px;
                 height: 20px;
                 .content{
-                    width:100px;
+                    width:150px;
                     float:left;
                 }
                 .action{
@@ -78,6 +92,9 @@ input{
                     .btn{
                         float:left;
                     }
+                }
+                .small{
+                    font-size: 10px;
                 }
 
             }
@@ -125,4 +142,12 @@ input{
             margin-right:5px;
         }
     }
+}
+
+
+#info{
+    position:absolute;
+    top:60;
+    right:10;
+    width: 220px;
 }

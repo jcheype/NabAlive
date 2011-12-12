@@ -2,6 +2,7 @@ class NabaztagActionView extends Backbone.View
     events:
         'submit form.play':"play"
         'submit form.tts':"tts"
+        'submit form.subscribe':"subscribe"
         'submit form.exec':"exec"
    
     template: JST['nabaztag/nabaztag_action']
@@ -22,7 +23,7 @@ class NabaztagActionView extends Backbone.View
     subscribe: =>
         email = $('input.subscribe').val()
         console?.log(email)
-        @model.subscribe(email)
+        @model.subscribe(email, => router.info.alert("subscription done."))
     
     exec: =>
         command = $('.command').val()

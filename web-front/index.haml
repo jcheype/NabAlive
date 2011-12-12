@@ -1,6 +1,7 @@
 %html{:xmlns => "http://www.w3.org/1999/xhtml", "xml:lang" => "en", :lang => "en"}
     %head
         %link{:type => "text/css", :rel =>"stylesheet", :href => "http://dl7l6a5kdjekq.cloudfront.net/assets/common_#{Time.now().to_i}.css?"}
+        %meta{"http-equiv" => "Content-Type", :content => "text/html; charset=utf-8"}
     %body
         #container
             .topbar(data-scrollspy="scrollspy")
@@ -12,6 +13,10 @@
                                 %a(href="#nabaztag/list")Nabaztags
                             %li
                                 %a(href="#applications")Applications
+                            %li
+                                %a(href="#nab2nabs")Nab2Nabs
+                            %li
+                                %a(href="#doc")Documentation
                         %ul.nav.right
                             %li.showLogin.hide
                                 %a.small(data-controls-modal="registermodal" data-backdrop="true" data-keyboard="true")Register
@@ -22,6 +27,8 @@
                 #login
             #header
             #content.container
+                
+            #info
         #modals
     %script{:type => "text/javascript", :src  => "http://dl7l6a5kdjekq.cloudfront.net/assets/lib_#{Time.now().to_i}.js"}
     %script{:type => "text/javascript", :src  => "http://dl7l6a5kdjekq.cloudfront.net/assets/template_#{Time.now().to_i}.js"}
