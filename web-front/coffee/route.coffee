@@ -1,10 +1,12 @@
 class AppRouter extends Backbone.Router
-
+    templateDoc: JST['info/doc']
     
     initialize: =>
         @isLogin = false
         @nabaztagCollection = new NabaztagCollection()
         @applicationCollection = new ApplicationCollection()
+        @info = new InfoView()
+        $('#info').html($(@info.render().el))
         $('.showLogin').hide()
         $('.showLogout').hide()
     
@@ -27,14 +29,20 @@ class AppRouter extends Backbone.Router
         "nabaztag/:mac/appinstall/:apikey": "nabaztagInstallApp",
         "nabaztag/:mac/appinstall/:apikey/:uuid": "nabaztagInstallApp",
         "applications": "applicationList",
+        "nab2nabs": "nab2nabs",
+        "doc": "doc",
         "*actions": "defaultRoute"
     }
 
     defaultRoute: ( actions ) =>
-        console?.log( actions )
-        $('#content').html("")
+        console?.log( actions )        
         if(@isLogin)
             @navigate("nabaztag/list", true)
+        else
+            $('#content').html(@templateDoc())
+    
+    doc: =>
+        $('#content').html(@templateDoc())
 
     onLogin: =>
         console?.log("onLogin")
@@ -79,7 +87,11 @@ class AppRouter extends Backbone.Router
         console?.log("applicationList")
         applicationCollectionView = new ApplicationCollectionView({model: @applicationCollection})
         $('#content').html($(applicationCollectionView.render().el))
-        
+    
+    nab2nabs: =>
+        console?.log("nab2nabs")
+        nab2NabsView = new Nab2NabsView({model: @nabaztagCollection})
+        $('#content').html($(nab2NabsView.render().el))
 
 global = this
 
