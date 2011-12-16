@@ -6,7 +6,7 @@ class NabaztagItemView extends Backbone.View
     template: JST['nabaztag/nabaztag_item']
    
     initialize: ()->
-        @model.bind('change', @render)
+        @model.bind('change', @update)
    
     render: =>
         $(@el).html( @template(@model.toJSON()) )
@@ -19,18 +19,24 @@ class NabaztagItemView extends Backbone.View
             actionBtn.addClass("disabled")
             
         apps = $(@el).find(".apps")
-        apps.hide()
+
         $(@el).find(".nab").click(=>
-            apps.slideToggle()
+            apps.slideToggle()            
         )
+        apps.hide()
         
+        @update()
+        this
+    
+    update: =>
+        apps = $(@el).find(".apps")
+        apps.empty()
         configs = @model.get("applicationConfigList")
         console?.log("configs: ", configs)
         _.each(configs, (config) =>
             cItem = new NabaztagConfigItemView({model: @model, config: config})
             apps.append(cItem.render().el)
         )
-        this
     
     actionClick: =>
         console?.log("actionClick")

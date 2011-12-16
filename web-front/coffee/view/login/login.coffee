@@ -42,7 +42,11 @@ class LoginView extends Backbone.View
                 $('#loginmodal').modal('hide')
                 router.navigate("onLogin", true)
             console?.log(data)
-        , "json");
+        , "json").error(=>
+            $('#loginmodal').modal('hide')
+            $('#registermodal').modal('hide')
+            router.info.alert("Erreur d'authentification.", "error")
+        );
         
 
     doRegister: =>
@@ -55,7 +59,11 @@ class LoginView extends Backbone.View
                 $('#registermodal').modal('hide')
                 router.navigate("onLogin", true)
             console?.log(data)
-        , "json");        
+        , "json").error(=>
+                $('#loginmodal').modal('hide')
+                $('#registermodal').modal('hide')
+                router.info.alert("Erreur d'enregistrement.", "error")
+            );     
         
 
 this.LoginView = LoginView

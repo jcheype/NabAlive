@@ -20,19 +20,19 @@ class AppRouter extends Backbone.Router
             $('.showLogin').show()
             
     
-    routes: {
-        "onLogin": "onLogin",
-        "logout": "logout",
-        "nabaztag/action/:id": "nabaztagAction",
-        "nabaztag/list": "nabaztagList",
-        "nabaztag/add": "nabaztagAdd",
-        "nabaztag/:mac/appinstall/:apikey": "nabaztagInstallApp",
-        "nabaztag/:mac/appinstall/:apikey/:uuid": "nabaztagInstallApp",
-        "applications": "applicationList",
-        "nab2nabs": "nab2nabs",
-        "doc": "doc",
+    routes:
+        "onLogin": "onLogin"
+        "logout": "logout"
+        "nabaztag/action/:id": "nabaztagAction"
+        "nabaztag/list": "nabaztagList"
+        "nabaztag/add": "nabaztagAdd"
+        "nabaztag/:mac/appinstall/:apikey": "nabaztagInstallApp"
+        "nabaztag/:mac/appinstall/:apikey/:uuid": "nabaztagInstallApp"
+        "applications": "applicationList"
+        "nab2nabs": "nab2nabs"
+        "doc": "doc"
         "*actions": "defaultRoute"
-    }
+    
 
     defaultRoute: ( actions ) =>
         console?.log( actions )        
@@ -95,6 +95,7 @@ class AppRouter extends Backbone.Router
 
 global = this
 
+
 $(document).ready(=>
     login = new LoginView()
     $('#login').html($(login.render().el))
@@ -119,7 +120,3 @@ $(document).ready(=>
         global.router.navigate("home", true)
         Backbone.history.start()
 )
-
-
-            
-

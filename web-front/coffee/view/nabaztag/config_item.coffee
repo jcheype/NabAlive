@@ -21,5 +21,4 @@ class NabaztagConfigItemView extends Backbone.View
     moreClick: =>
         router.navigate("nabaztag/#{@model.get('macAddress')}/appinstall/#{@config.applicationStoreApikey}/#{@config.uuid}", true)
         
-
 this.NabaztagConfigItemView = NabaztagConfigItemView

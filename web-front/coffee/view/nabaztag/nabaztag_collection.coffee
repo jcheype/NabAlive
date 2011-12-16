@@ -7,8 +7,10 @@ class NabaztagCollectionView extends Backbone.View
     initialize: ()->
         console?.log("init NabaztagListView")
         
-        # @model.bind('reset', @render)
-        @model.bind('all', @render)
+        @model.bind('reset', @render)
+        @model.bind('add', @render)
+        @model.bind('remove', @render)
+        #@model.bind('all', @render)
         @model.fetch()
    
     render: =>
