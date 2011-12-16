@@ -4,13 +4,18 @@ import com.google.code.morphia.annotations.Entity;
 import com.google.code.morphia.annotations.Id;
 import com.google.code.morphia.annotations.Indexed;
 import org.bson.types.ObjectId;
+import org.codehaus.jackson.annotate.JsonIgnore;
+import org.hibernate.validator.constraints.Email;
 
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 
 /**
@@ -26,6 +31,8 @@ public class User {
     private ObjectId id;
 
     @Indexed(unique = true)
+    @Email
+    @Size(min=5)
     @NotNull
     String email;
 
@@ -39,6 +46,13 @@ public class User {
 
     @NotNull
     byte[] password;
+
+    @JsonIgnore
+    String resetId;
+
+    @JsonIgnore
+    @NotNull
+    List<String> permissions = new ArrayList<String>();
 
 
     public ObjectId getId() {
@@ -86,6 +100,17 @@ public class User {
             throw new IllegalArgumentException("bad password");
     }
 
+    public String getResetId() {
+        return resetId;
+    }
+
+    public void setResetId(String resetId) {
+        this.resetId = resetId;
+    }
+
+    public List<String> getPermissions() {
+        return permissions;
+    }
 
     @Override
     public String toString() {
@@ -95,6 +120,8 @@ public class User {
                 ", lastname='" + lastname + '\'' +
                 ", firstname='" + firstname + '\'' +
                 ", password=" + password +
+                ", resetId='" + resetId + '\'' +
+                ", permissions=" + permissions +
                 '}';
     }
 }
