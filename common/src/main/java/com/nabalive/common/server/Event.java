@@ -7,7 +7,7 @@ package com.nabalive.common.server;
  */
 public class Event {
     public enum Type {
-        PRESENCE, BUTTON, EARS, UNKNOWN_MESSAGE
+        PRESENCE, BUTTON, EARS, UNKNOWN_MESSAGE, CONNECT, RESOURCE, BIND_RESOURCE, UNBIND_RESOURCE, DISCONNECT
     }
 
     public final String content;
