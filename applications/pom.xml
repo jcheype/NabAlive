@@ -18,6 +18,7 @@
         <module>application-clock</module>
         <module>application-mood</module>
         <module>application-horoscope</module>
+        <module>application-taichi</module>
     </modules>
 
     <properties>
