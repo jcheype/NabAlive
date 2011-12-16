@@ -1,15 +1,11 @@
 package com.nabalive.server.web;
 
-import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -38,34 +34,41 @@ public class ChorBuilder {
     }
 
     //10,0,motor,1,20,0,0,0,led,2,0,238,0,2,led,1,250,0,0,3,led,2,0,0,0
-    public ChorBuilder(String chor) {
+    public ChorBuilder(String chor, int loop) {
         String[] items = chor.split(",");
         List<String> itemList = Arrays.asList(items);
-        Iterator<String> it = itemList.iterator();
-
-        int tempo = atoi(it.next());
+        String tempoStr = itemList.get(0);
+        int tempo = atoi(tempoStr);
         setTempo(tempo);
 
-        while (it.hasNext()) {
-            waitChor(atoi(it.next()));
-            String cmd = it.next();
-            if ("motor".equals(cmd)) {
-                byte ear = atob(it.next());
-                byte pos = (byte) (atoi(it.next()) / 10);
-                it.next(); // drop
-                byte dir = atob(it.next());
+        itemList = itemList.subList(1, itemList.size());
+        logger.debug("itemList: {}", itemList);
 
-                setEar(ear, dir, pos);
-            }
-            if ("led".equals(cmd)) {
-                byte led = atob(it.next());
-                byte r = atob(it.next());
-                byte v = atob(it.next());
-                byte b = atob(it.next());
+        for (int i = 0; i < loop; i++) {
+            Iterator<String> it = itemList.iterator();
 
-                setLed(led, r, v, b);
+            while (it.hasNext()) {
+                waitChor(atoi(it.next()));
+                String cmd = it.next();
+                if ("motor".equals(cmd)) {
+                    byte ear = atob(it.next());
+                    byte pos = (byte) (atoi(it.next()) / 10);
+                    it.next(); // drop
+                    byte dir = atob(it.next());
+
+                    setEar(ear, dir, pos);
+                }
+                if ("led".equals(cmd)) {
+                    byte led = atob(it.next());
+                    byte r = atob(it.next());
+                    byte v = atob(it.next());
+                    byte b = atob(it.next());
+
+                    setLed(led, r, v, b);
+                }
             }
         }
+
     }
 
     public ChorBuilder(int tempo) {
@@ -155,16 +158,6 @@ public class ChorBuilder {
         res.writeInt(channelBuffer.readableBytes());
         res.writeBytes(channelBuffer);
         res.writeZero(4);
-        return channelBuffer;
-    }
-
-    public ChannelBuffer build(int loop) {
-        ChannelBuffer res = ChannelBuffers.dynamicBuffer();
-        res.writeInt(channelBuffer.readableBytes() * loop);
-        for (int i = 0; i < loop; i++)
-            res.writeBytes(channelBuffer.copy());
-        res.writeZero(4);
-
         return res;
     }
 

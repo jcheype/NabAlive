@@ -19,7 +19,9 @@ import com.nabalive.framework.web.Request;
 import com.nabalive.framework.web.Response;
 import com.nabalive.framework.web.Route;
 import com.nabalive.framework.web.SimpleRestHandler;
+import com.nabalive.framework.web.exception.HttpException;
 import com.nabalive.server.jabber.ConnectionManager;
+import com.nabalive.server.web.Format;
 import com.nabalive.server.web.Token;
 import com.nabalive.server.web.TokenUtil;
 import org.bson.types.ObjectId;
@@ -50,6 +52,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class NabaztagController {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ObjectMapper mapper = new ObjectMapper(); // can reuse, share globally
+    private final String OPERATIONNEL_URL = "http://karotz.s3.amazonaws.com/nab/operationnel.mp3";
 
     @Autowired
     private SimpleRestHandler restHandler;
@@ -89,15 +92,21 @@ public class NabaztagController {
                         Token token = TokenUtil.decode(checkNotNull(request.getParamOrHeader("token")), Token.class);
                         logger.debug("received json: {}", request.content);
                         Map<String, String> nabMap = mapper.readValue(request.content, Map.class);
+                        String mac = CharMatcher.JAVA_LETTER_OR_DIGIT.retainFrom(checkNotNull(nabMap.get("mac")).toLowerCase());
+
+                        if(!connectionManager.containsKey(mac)){
+                            throw new HttpException(HttpResponseStatus.INTERNAL_SERVER_ERROR, "Nabaztag not Connected");
+                        }
 
                         Nabaztag nabaztag = new Nabaztag();
-                        nabaztag.setMacAddress(nabMap.get("mac"));
+                        nabaztag.setMacAddress(mac);
                         nabaztag.setName(nabMap.get("name"));
                         nabaztag.setApikey(UUID.randomUUID().toString());
                         nabaztag.setOwner(token.getUserId());
 
                         nabaztagDAO.save(nabaztag);
-
+                        
+                        messageService.sendMessage(mac, "ST " + OPERATIONNEL_URL + "\nMW\n");
                         response.writeJSON(nabaztag);
                     }
                 })
@@ -105,8 +114,12 @@ public class NabaztagController {
                     @Override
                     public void handle(Request request, Response response, Map<String, String> map) throws Exception {
                         Token token = TokenUtil.decode(checkNotNull(request.getParamOrHeader("token")), Token.class);
-                        String mac = checkNotNull(request.getParam("mac"));
+                        String mac = CharMatcher.JAVA_LETTER_OR_DIGIT.retainFrom(checkNotNull(request.getParam("mac")).toLowerCase());
                         String name = request.getParam("name");
+
+                        if(!connectionManager.containsKey(mac)){
+                            throw new HttpException(HttpResponseStatus.INTERNAL_SERVER_ERROR, "Nabaztag not Connected");
+                        }
 
                         Nabaztag nabaztag = new Nabaztag();
                         nabaztag.setMacAddress(mac);
@@ -116,6 +129,7 @@ public class NabaztagController {
 
                         nabaztagDAO.save(nabaztag);
 
+                        messageService.sendMessage(mac, "ST " + OPERATIONNEL_URL + "\nMW\n");
                         response.writeJSON(nabaztag);
                     }
                 })
@@ -161,6 +175,9 @@ public class NabaztagController {
                         nabaztag.addApplicationConfig(config);
 
                         nabaztagDAO.save(nabaztag);
+
+                        tts(nabaztag, request.request.getHeader("Host") ,"fr", Format.get("app.install.success", appName));
+
                         response.writeJSON(nabaztag);
                     }
                 })
@@ -315,14 +332,14 @@ public class NabaztagController {
                         Set<Subscription> subscriptionSet = nabaztag.getSubscribe();
 
                         List<ObjectId> objectList = new ArrayList<ObjectId>();
-                        for(Subscription subscription: subscriptionSet){
+                        for (Subscription subscription : subscriptionSet) {
                             objectList.add(new ObjectId(subscription.getObjectId()));
                         }
                         List<Nabaztag> nabaztagList = nabaztagDAO.find(nabaztagDAO.createQuery().field("_id").in(objectList)).asList();
-                        
+
                         String command = "ST " + url + "\nMW\n";
-                        for(Nabaztag nab : nabaztagList){
-                            if(connectionManager.containsKey(nab.getMacAddress()))
+                        for (Nabaztag nab : nabaztagList) {
+                            if (connectionManager.containsKey(nab.getMacAddress()))
                                 messageService.sendMessage(nab.getMacAddress(), command);
                         }
 

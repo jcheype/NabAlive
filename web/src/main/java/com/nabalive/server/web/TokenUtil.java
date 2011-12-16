@@ -88,7 +88,6 @@ public class TokenUtil {
             logger.debug("SECRET_KEY: " + Hex.encodeHexString(rawKey));
         }
         SECRET_KEY_SPEC = new SecretKeySpec(rawKey, "RC4");
-
     }
 
 //    public static String genToken(String value) throws NoSuchAlgorithmException {

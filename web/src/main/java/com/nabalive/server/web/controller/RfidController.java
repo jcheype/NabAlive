@@ -2,6 +2,7 @@ package com.nabalive.server.web.controller;
 
 import com.nabalive.application.core.Application;
 import com.nabalive.application.core.ApplicationManager;
+import com.nabalive.common.server.MessageService;
 import com.nabalive.data.core.dao.ApplicationStoreDAO;
 import com.nabalive.data.core.dao.NabaztagDAO;
 import com.nabalive.data.core.model.ApplicationConfig;
@@ -10,6 +11,7 @@ import com.nabalive.framework.web.Request;
 import com.nabalive.framework.web.Response;
 import com.nabalive.framework.web.Route;
 import com.nabalive.framework.web.SimpleRestHandler;
+import com.nabalive.server.web.ConnectionWelcome;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +32,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @Component
 public class RfidController {
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    @Autowired
+    MessageService messageService;
 
     @Autowired
     private SimpleRestHandler restHandler;
@@ -56,7 +61,13 @@ public class RfidController {
                         String tag = checkNotNull(request.getParam("t")).toLowerCase();
                         String host = request.request.getHeader("Host");
 
-                        Nabaztag nabaztag = checkNotNull(nabaztagDAO.findOne("macAddress", mac));
+                        Nabaztag nabaztag = nabaztagDAO.findOne("macAddress", mac);
+                        if(nabaztag == null){
+                            messageService.sendMessage(mac, "ST " + ConnectionWelcome.WELCOME_URL + "\nMW\n");
+                            response.write("ok");
+                            return;
+                        }
+
                         if (!nabaztag.getTags().contains(tag)) {
                             nabaztag.getTags().add(tag);
                             nabaztagDAO.save(nabaztag);

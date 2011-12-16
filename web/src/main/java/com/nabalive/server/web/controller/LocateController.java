@@ -44,7 +44,7 @@ public class LocateController {
     @PostConstruct
     void init() {
         restHandler
-                .get(new Route("/vl/locate.jsp") {
+                .get(new Route(".*/locate.jsp") {
                     @Override
                     public void handle(Request request, Response response, Map<String, String> map) throws Exception {
                         String host = request.request.getHeader("Host");
@@ -62,7 +62,7 @@ public class LocateController {
                         }
                     }
                 })
-                .get(new Route("/vl/bc.jsp") {
+                .get(new Route(".*/bc.jsp") {
                     @Override
                     public void handle(Request request, Response response, Map<String, String> map) throws Exception {
                         InputStream resourceAsStream = getClass().getResourceAsStream("/bc.jsp");
