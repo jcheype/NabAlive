@@ -43,7 +43,7 @@ public class ClockApplication extends ApplicationBase {
 
         StringBuilder command = new StringBuilder();
 
-        String path = lang + "/" + ((hour24 + 1) % 24) + "/" + (rand.nextInt(4) + 1);
+        String path = lang + "/" + (hour24 % 24) + "/" + (rand.nextInt(4) + 1);
 
         command.append("MC http://karotz.s3.amazonaws.com/applications/clock/" + lang + "/signature.mp3\nMW\n");
         command.append("CH http://karotz.s3.amazonaws.com/applications/clock/" + path + ".chor\n");
