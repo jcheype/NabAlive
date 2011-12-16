@@ -1,5 +1,6 @@
 package com.nabalive.server.jabber.handler;
 
+import com.nabalive.common.server.Event;
 import com.nabalive.server.jabber.Status;
 import com.nabalive.server.jabber.util.Jid;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -39,6 +40,8 @@ public class IqHandler extends JabberBaseHandler {
             write(e.getChannel(), reply);
             jid.setResource(resource);
             status.setJid(jid);
+            status.onEvent(new Event(message, Event.Type.BIND_RESOURCE));
+
         } else if (message.contains("<session xmlns='urn:ietf:params:xml:ns:xmpp-session'/>")) {
             String reply = "<iq id='" + id + "' type='result' from='" + to + "'><session xmlns='urn:ietf:params:xml:ns:xmpp-session'/></iq>";
             write(e.getChannel(), reply);
@@ -54,6 +57,8 @@ public class IqHandler extends JabberBaseHandler {
         } else if (message.contains("<unbind xmlns='urn:ietf:params:xml:ns:xmpp-bind'>")) {
             String reply = "<iq id='" + id + "' type='result'/>";
             write(e.getChannel(), reply);
+            status.onEvent(new Event(message, Event.Type.UNBIND_RESOURCE));
+
         }
 
     }

@@ -1,5 +1,6 @@
 package com.nabalive.server.jabber;
 
+import com.nabalive.common.server.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -13,6 +14,8 @@ import java.util.*;
 @Component
 public class ConnectionManager {
     private final Map<String, Status> connectionMapByMac = new HashMap<String, Status>();
+    
+    private final List<EventListener> eventListeners = new ArrayList<EventListener>();
 
     public int size() {
         return connectionMapByMac.size();
@@ -60,5 +63,13 @@ public class ConnectionManager {
 
     public Set<Map.Entry<String, Status>> entrySet() {
         return connectionMapByMac.entrySet();
+    }
+
+    public void addEventListener(EventListener eventListener){
+        eventListeners.add(eventListener);
+    }
+
+    public List<EventListener> getEventListeners() {
+        return eventListeners;
     }
 }

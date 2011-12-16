@@ -51,7 +51,7 @@ public class NabaliveServerHandler extends IdleStateAwareChannelHandler {
         synchronized (ctx) {
             Status status = (Status) ctx.getAttachment();
             if (status == null) {
-                status = new Status(ctx);
+                status = new Status(ctx, connectionManager.getEventListeners());
                 ctx.setAttachment(status);
             }
             return status;

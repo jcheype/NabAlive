@@ -26,11 +26,12 @@ public class Status {
     private String username;
     private final ChannelHandlerContext context;
 
-    private final List<EventListener> eventListenerList = new ArrayList<EventListener>();
+    private List<EventListener> eventListenerList = new ArrayList<EventListener>();
     private Jid jid;
 
-    public Status(ChannelHandlerContext ctx) {
+    public Status(ChannelHandlerContext ctx, List<EventListener> eventListeners) {
         this.context = ctx;
+        this.eventListenerList = eventListeners;
     }
 
     public boolean isAuthenticated() {
