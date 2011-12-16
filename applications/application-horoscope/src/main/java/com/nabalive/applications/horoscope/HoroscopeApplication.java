@@ -83,7 +83,7 @@ public class HoroscopeApplication extends ApplicationBase {
     private void sendHoroscope(Nabaztag nabaztag, HoroscopeOfDay horoscopeOfDay, String sign) throws ExecutionException, UnsupportedEncodingException {
         String msg = horoscopeOfDay.horoscopeMap.get(sign);
         if(msg == null)
-            msg = "Pas d'horoscope trouvé";
+            msg = "Horoscope introuvable";
 
         String text = URLEncoder.encode(msg, "UTF-8");
         StringBuilder command = new StringBuilder();
