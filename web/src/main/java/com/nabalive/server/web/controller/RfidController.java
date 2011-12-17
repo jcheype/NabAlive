@@ -71,7 +71,7 @@ public class RfidController {
                         if (!nabaztag.getTags().contains(tag)) {
                             nabaztag.getTags().add(tag);
                             nabaztagDAO.save(nabaztag);
-                            nabaztagController.tts(nabaztag, host, "fr", "Nouveau tag ajouté");
+                            nabaztagController.tts(nabaztag.getMacAddress(), host, "fr", "Nouveau tag ajouté");
                         } else {
                             for (ApplicationConfig applicationConfig : nabaztag.getApplicationConfigList()) {
                                 if (applicationConfig.getTags().contains(tag)) {
@@ -82,7 +82,7 @@ public class RfidController {
                                     return;
                                 }
                             }
-                            nabaztagController.tts(nabaztag, host, "fr", "Aucune application associée au tag");
+                            nabaztagController.tts(nabaztag.getMacAddress(), host, "fr", "Aucune application associée au tag");
                         }
                         response.write("ok");
                     }

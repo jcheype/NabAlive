@@ -4,10 +4,7 @@ import com.google.code.morphia.query.Query;
 import com.google.code.morphia.query.UpdateOperations;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Function;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.nabalive.common.server.MessageService;
 import com.nabalive.data.core.dao.NabaztagDAO;
 import com.nabalive.data.core.dao.UserDAO;
@@ -21,6 +18,7 @@ import com.nabalive.framework.web.Route;
 import com.nabalive.framework.web.SimpleRestHandler;
 import com.nabalive.framework.web.exception.HttpException;
 import com.nabalive.server.jabber.ConnectionManager;
+import com.nabalive.server.jabber.packet.SleepPacket;
 import com.nabalive.server.web.Format;
 import com.nabalive.server.web.Token;
 import com.nabalive.server.web.TokenUtil;
@@ -29,7 +27,6 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.jboss.netty.handler.codec.http.HttpVersion;
-import org.jboss.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +34,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.*;
 
@@ -94,7 +90,7 @@ public class NabaztagController {
                         Map<String, String> nabMap = mapper.readValue(request.content, Map.class);
                         String mac = CharMatcher.JAVA_LETTER_OR_DIGIT.retainFrom(checkNotNull(nabMap.get("mac")).toLowerCase());
 
-                        if(!connectionManager.containsKey(mac)){
+                        if (!connectionManager.containsKey(mac)) {
                             throw new HttpException(HttpResponseStatus.INTERNAL_SERVER_ERROR, "Nabaztag not Connected");
                         }
 
@@ -105,7 +101,7 @@ public class NabaztagController {
                         nabaztag.setOwner(token.getUserId());
 
                         nabaztagDAO.save(nabaztag);
-                        
+
                         messageService.sendMessage(mac, "ST " + OPERATIONNEL_URL + "\nMW\n");
                         response.writeJSON(nabaztag);
                     }
@@ -117,7 +113,7 @@ public class NabaztagController {
                         String mac = CharMatcher.JAVA_LETTER_OR_DIGIT.retainFrom(checkNotNull(request.getParam("mac")).toLowerCase());
                         String name = request.getParam("name");
 
-                        if(!connectionManager.containsKey(mac)){
+                        if (!connectionManager.containsKey(mac)) {
                             throw new HttpException(HttpResponseStatus.INTERNAL_SERVER_ERROR, "Nabaztag not Connected");
                         }
 
@@ -176,7 +172,7 @@ public class NabaztagController {
 
                         nabaztagDAO.save(nabaztag);
 
-                        tts(nabaztag, request.request.getHeader("Host") ,"fr", Format.get("app.install.success", appName));
+                        tts(nabaztag.getMacAddress(), request.request.getHeader("Host") ,"fr", Format.get("app.install.success", appName));
 
                         response.writeJSON(nabaztag);
                     }
@@ -260,7 +256,7 @@ public class NabaztagController {
                         Nabaztag nabaztag = checkNotNull(nabaztagDAO.findOne("apikey", apikey));
 
                         String host = request.request.getHeader("Host");
-                        tts(nabaztag, host, voice, text);
+                        tts(nabaztag.getMacAddress(), host, voice, text);
 
                         response.writeJSON("ok");
                     }
@@ -274,6 +270,26 @@ public class NabaztagController {
 
                         logger.debug("COMMAND: {}", command);
                         messageService.sendMessage(nabaztag.getMacAddress(), command);
+                        response.writeJSON("ok");
+                    }
+                })
+                .get(new Route("/nabaztags/:apikey/sleep") {
+                    @Override
+                    public void handle(Request request, Response response, Map<String, String> map) throws Exception {
+                        String apikey = checkNotNull(map.get("apikey"));
+                        Nabaztag nabaztag = checkNotNull(nabaztagDAO.findOne("apikey", apikey));
+
+                        messageService.sendMessage(nabaztag.getMacAddress(), new SleepPacket(SleepPacket.Action.Sleep));
+                        response.writeJSON("ok");
+                    }
+                })
+                .get(new Route("/nabaztags/:apikey/wakeup") {
+                    @Override
+                    public void handle(Request request, Response response, Map<String, String> map) throws Exception {
+                        String apikey = checkNotNull(map.get("apikey"));
+                        Nabaztag nabaztag = checkNotNull(nabaztagDAO.findOne("apikey", apikey));
+
+                        messageService.sendMessage(nabaztag.getMacAddress(), new SleepPacket(SleepPacket.Action.WakeUp));
                         response.writeJSON("ok");
                     }
                 })
@@ -348,14 +364,14 @@ public class NabaztagController {
                 });
     }
 
-    public void tts(Nabaztag nabaztag, String host, String voice, String text) throws Exception {
+    public void tts(String mac, String host, String voice, String text) throws Exception {
         StringBuilder commands = new StringBuilder();
         String encodedText = URLEncoder.encode(text, "UTF-8");
-        String url = "http://" + host + "/tts/" + nabaztag.getApikey() + "/" + voice + "?text=" + encodedText;
+        String url = "http://" + host + "/tts/" + voice + "?text=" + encodedText;
 
         commands.append("MC " + url + "\nMW\n");
 
         logger.debug("COMMAND: {}", commands);
-        messageService.sendMessage(nabaztag.getMacAddress(), commands.toString());
+        messageService.sendMessage(mac, commands.toString());
     }
 }
