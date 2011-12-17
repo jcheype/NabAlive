@@ -36,6 +36,18 @@ class Nabaztag extends Backbone.Model
         apikey = @get("apikey")
         $.get( "/nabaztags/#{apikey}/exec", {"command": command}).success(=> success() if success ).error(=> error() if error)
         
+    sleep: (success, error)=>
+        apikey = @get("apikey")
+        $.get( "/nabaztags/#{apikey}/sleep")
+            .success(=> @fetch(); success() if success )
+            .error(=> @fetch(); error() if error)
+            
+    wakeup: (success, error)=>
+        apikey = @get("apikey")
+        $.get( "/nabaztags/#{apikey}/wakeup")
+            .success(=> @fetch(); success() if success )
+            .error(=> @fetch(); error() if error)
+                
 this.Nabaztag = Nabaztag
 
 

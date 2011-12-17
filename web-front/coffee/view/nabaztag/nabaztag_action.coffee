@@ -4,6 +4,8 @@ class NabaztagActionView extends Backbone.View
         'submit form.tts':"tts"
         'submit form.subscribe':"subscribe"
         'submit form.exec':"exec"
+        'click .btn.wakeup':'wakeup'
+        'click .btn.sleep':'sleep'
    
     template: JST['nabaztag/nabaztag_action']
    
@@ -28,5 +30,11 @@ class NabaztagActionView extends Backbone.View
     exec: =>
         command = $('.command').val()
         @model.exec(command)
+        
+    wakeup: =>
+        @model.wakeup()
+        
+    sleep: =>
+        @model.sleep()
 
 this.NabaztagActionView = NabaztagActionView
