@@ -1,0 +1,6 @@
+.day
+    %label(for="hour_w_#{day}") #{day}:
+    %input.digit2(type='text' maxlength="2" name="hour_w_#{day}"  value="#{wakeup[0]}")
+    %input.digit2(type='text' maxlength="2" name="min_w_#{day}"   value="#{wakeup[1]}")
+    %input.digit2(type='text' maxlength="2" name="hour_s_#{day}"  value="#{sleep[0]}" )
+    %input.digit2(type='text' maxlength="2" name="min_s_#{day}"   value="#{sleep[1]}" )
