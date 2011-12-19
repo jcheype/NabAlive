@@ -1,0 +1,44 @@
+{ "triggers":[ "RFID" ],
+    "fields":[
+        {
+            "type":"SELECT",
+            "label":"Radio",
+            "name":"radio",
+            "values":{
+                "OUI FM":"http://ouifm.ice.infomaniak.ch/ouifm-high.mp3",
+                "RTL":"http://streaming.radio.rtl.fr:80/rtl-1-44-96",
+                "Europe 1":"http://vipicecast.yacast.net/europe1",
+                "RMC":"http://vipicecast.yacast.net/rmc",
+                "BFM":"http://vipicecast.yacast.net/bfm",
+                "France Inter":"http://mp3.live.tv-radio.com/franceinter/all/franceinterhautdebit.mp3",
+                "France Info":"http://mp3.live.tv-radio.com/franceinfo/all/franceinfo.mp3",
+                "Zen Radio":"http://zenradio.fr:8800",
+                "Radio Nova":"http://broadcast.infomaniak.net/radionova-high.mp3",
+                "MFM":"http://mfm.ice.infomaniak.ch:80/mfm-128.mp3",
+                "Le Mouv":"http://mp3.live.tv-radio.com/lemouv/all/lemouvhautdebit.mp3",
+                "Fun Radio":"http://streaming.radio.funradio.fr:80/fun-1-44-96",
+                "Radio Classique":"http://broadcast.infomaniak.net:80/radioclassique-high.mp3",
+                "SKYfm Top Hits":"http://scfire-ntc-aa03.stream.aol.com:80/stream/1014",
+                "SKYfm Classic Rock":"http://wstream5b.di.fm:80/classicrock",
+                "SKYfm The 80s":"http://scfire-dtc-aa05.stream.aol.com:80/stream/1013",
+                "SKYfm Smooth Jazz":"http://scfire-dtc-aa01.stream.aol.com:80/stream/1010",
+                "Radio Country":"http://url.radiostreamlive.com/radiocountrylive/low_ad.asx",
+                "Bloomberg Radio":"http://www.bloomberg.com/streams/audio/radio_live.asx",
+                "Radio-Canada Montreal":"http://www.radio-canada.ca/util/endirect/premiere.asx",
+                "NME Radio":"http://icy-e-01.sharp-stream.com:80/nmeradio.mp3",
+                "Magic":"http://media-ice.musicradio.com:80/HeartLondonMP3",
+                "Capital":"http://media-ice.musicradio.com:80/CapitalMP3",
+                "Jazz fm":"http://83.170.105.95:8002",
+                "Smooth Radio":"http://shoutcast.gmgradio.com:10006",
+                "NME Radio":"http://icy-e-01.sharp-stream.com:80/nmeradio.mp3",
+                "Talk Sport":"http://stream5.radiomonitor.com:80/talksport_world"
+            }
+        },
+        {
+            "type":"INPUT",
+            "label":"Custom",
+            "name":"custom",
+            "values":{}
+        }
+    ]
+}
