@@ -62,9 +62,14 @@ public class NabaliveServerHandler extends IdleStateAwareChannelHandler {
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
         final ChannelBuffer messageCB = (ChannelBuffer) e.getMessage();
         String message = messageCB.toString(CharsetUtil.UTF_8);
-        logger.debug("<<<<<<<<<<< " + message);
-
         final Status status = getStatus(ctx);
+
+
+        if (status.getJid() != null)
+            logger.debug(status.getJid().getUser() + " <<<<<<<<<<< {}", message);
+        else
+            logger.debug("<<<<<<<<<<< {}", message);
+
 
         if (message.startsWith("<?xml ")) {
             onStreamOpen(ctx, e, message);

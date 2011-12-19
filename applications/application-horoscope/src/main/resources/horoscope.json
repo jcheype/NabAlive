@@ -5,20 +5,20 @@
             "type":"SELECT",
             "label":"Signe",
             "name":"sign",
-            "values":[
-                "belier",
-                "taureau",
-                "gemeaux",
-                "cancer",
-                "lion",
-                "vierge",
-                "balance",
-                "scorpion",
-                "sagittaire",
-                "capricorne",
-                "verseau",
-                "poissons"
-            ]
+            "values":{
+                "belier":"Bélier",
+                "taureau":"Taureau",
+                "gemeaux":"Gémeaux",
+                "cancer":"Cancer",
+                "lion":"Lion",
+                "vierge":"Vierge",
+                "balance":"Balance",
+                "scorpion":"Scorpion",
+                "sagittaire":"Sagitaire",
+                "capricorne":"Capricorne",
+                "verseau":"Verseau",
+                "poissons":"Poissons"
+            }
         }
     ]
 }

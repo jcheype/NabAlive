@@ -6,6 +6,7 @@ import com.nabalive.common.server.MessageService;
 import com.nabalive.data.core.dao.NabaztagDAO;
 import com.nabalive.data.core.model.Nabaztag;
 import com.nabalive.server.jabber.ConnectionManager;
+import com.nabalive.server.jabber.packet.PingPacket;
 import com.nabalive.server.web.controller.NabaztagController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +50,8 @@ public class ConnectionWelcome implements EventListener{
         if(event.type == Event.Type.UNBIND_RESOURCE && event.content.contains("<resource>boot</resource></unbind>")){
             Nabaztag nabaztag = nabaztagDAO.findOne("macAddress", sender);
             logger.debug("WELCOME: unbind {}", nabaztag);
+
+            messageService.sendMessage(sender, new PingPacket(60));
 
             if(nabaztag == null){
                 logger.debug("WELCOME: SENDING SOUND");

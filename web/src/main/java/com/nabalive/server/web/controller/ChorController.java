@@ -82,16 +82,19 @@ public class ChorController {
                                 if (rand.nextBoolean()) {
                                     chorBuilder.setLed((byte) led, (byte) rand.nextInt(), (byte) rand.nextInt(), (byte) rand.nextInt());
                                 }
-                            if(t%5 == 0){
+                            if(t%10 == 0){
                                 if (rand.nextBoolean()) {
-                                    chorBuilder.setEar((byte)0, (byte) (rand.nextBoolean()?0:1), (byte)rand.nextInt(0x12));
+                                    chorBuilder.setEar((byte)0, (byte) (rand.nextBoolean()?0:1), (byte)rand.nextInt(0x4));
                                 }
                                 if (rand.nextBoolean()) {
-                                    chorBuilder.setEar((byte)1, (byte) (rand.nextBoolean()?0:1), (byte)rand.nextInt(0x12));
+                                    chorBuilder.setEar((byte)1, (byte) (rand.nextBoolean()?0:1), (byte)rand.nextInt(0x4));
                                 }
                             }
                             chorBuilder.waitChor(1);
                         }
+                        chorBuilder.setEar((byte)1, (byte) 0, (byte)0);
+                        chorBuilder.setEar((byte)0, (byte) 0, (byte)0);
+
                         response.write(chorBuilder.build());
                     }
                 });

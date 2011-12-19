@@ -99,13 +99,9 @@ public class RecordController {
                                 Runnable runnable = new Runnable() {
                                     @Override
                                     public void run() {
-                                        try {
-                                            logger.debug("sending to {}", nabTmp.getMacAddress());
-                                            logger.debug("command {}", command);
-                                            messageService.sendMessage(nabTmp.getMacAddress(), command);
-                                        } catch (ExecutionException e) {
-                                            logger.error("cannot send msg", e);
-                                        }
+                                        logger.debug("sending to {}", nabTmp.getMacAddress());
+                                        logger.debug("command {}", command);
+                                        messageService.sendMessage(nabTmp.getMacAddress(), command);
                                     }
                                 };
                                 ses.schedule(runnable, 500, TimeUnit.MILLISECONDS);

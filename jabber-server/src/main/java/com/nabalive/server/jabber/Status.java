@@ -28,6 +28,7 @@ public class Status {
 
     private List<EventListener> eventListenerList = new ArrayList<EventListener>();
     private Jid jid;
+    private String presence;
 
     public Status(ChannelHandlerContext ctx, List<EventListener> eventListeners) {
         this.context = ctx;
@@ -86,5 +87,17 @@ public class Status {
     public void write(String data) {
         logger.debug(">>>>>>>>>> " + data);
         context.getChannel().write(ChannelBuffers.copiedBuffer(data.getBytes(CharsetUtil.UTF_8)));
+    }
+
+    public String getPresence() {
+        return presence;
+    }
+
+    public void setPresence(String presence) {
+        this.presence = presence;
+    }
+
+    public boolean isAsleep(){
+        return "asleep".equalsIgnoreCase(presence);
     }
 }

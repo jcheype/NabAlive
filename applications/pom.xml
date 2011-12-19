@@ -14,11 +14,13 @@
     <name>Applications</name>
 
     <modules>
+        <module>application-callurl</module>
         <module>application-meteo</module>
         <module>application-clock</module>
         <module>application-mood</module>
         <module>application-horoscope</module>
         <module>application-taichi</module>
+        <module>application-radio</module>
     </modules>
 
     <properties>

@@ -27,6 +27,9 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.jboss.netty.handler.codec.http.HttpVersion;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +38,11 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import java.net.URLEncoder;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -49,6 +56,7 @@ public class NabaztagController {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ObjectMapper mapper = new ObjectMapper(); // can reuse, share globally
     private final String OPERATIONNEL_URL = "http://karotz.s3.amazonaws.com/nab/operationnel.mp3";
+    private final static  Pattern schedulePattern = Pattern.compile("(\\d+):(\\d+)-(\\d)");
 
     @Autowired
     private SimpleRestHandler restHandler;
@@ -172,7 +180,7 @@ public class NabaztagController {
 
                         nabaztagDAO.save(nabaztag);
 
-                        tts(nabaztag.getMacAddress(), request.request.getHeader("Host") ,"fr", Format.get("app.install.success", appName));
+                        tts(nabaztag.getMacAddress(), request.request.getHeader("Host"), "fr", Format.get("app.install.success", appName));
 
                         response.writeJSON(nabaztag);
                     }
@@ -293,6 +301,51 @@ public class NabaztagController {
                         response.writeJSON("ok");
                     }
                 })
+                .get(new Route("/nabaztags/:apikey/tz") {
+                    @Override
+                    public void handle(Request request, Response response, Map<String, String> map) throws Exception {
+                        String apikey = checkNotNull(map.get("apikey"));
+                        String tz = checkNotNull(request.getParam("tz"));
+
+                        Query<Nabaztag> query = nabaztagDAO.createQuery().filter("apikey", apikey);
+                        UpdateOperations<Nabaztag> updateOperations = nabaztagDAO.createUpdateOperations();
+                        updateOperations.set("timeZone", tz);
+
+                        nabaztagDAO.update(query, updateOperations);
+
+                        response.writeJSON("ok");
+                    }
+                })
+                .get(new Route("/nabaztags/:apikey/schedule") {
+
+                    @Override
+                    public void handle(Request request, Response response, Map<String, String> map) throws Exception {
+                        String apikey = checkNotNull(map.get("apikey"));
+                        List<String> sleep = request.parameters.get("sleep[]");
+                        List<String> wakeup = request.parameters.get("wakeup[]");
+
+                        final Nabaztag nabaztag = nabaztagDAO.findOne("apikey", apikey);
+
+                        Query<Nabaztag> query = nabaztagDAO.createQuery().filter("apikey", apikey);
+
+                        UpdateOperations<Nabaztag> updateOperations = nabaztagDAO.createUpdateOperations();
+                        if (!sleep.isEmpty()) {
+                            List<String> utc = toUTC(sleep, nabaztag.getTimeZone());
+                            logger.debug("sleep {}", utc);
+                            updateOperations.set("sleep", utc);
+                        }
+                        if (!wakeup.isEmpty()) {
+                            List<String> utc = toUTC(wakeup, nabaztag.getTimeZone());
+
+                            logger.debug("wakeup {}", utc);
+                            updateOperations.set("wakeup", utc);
+                        }
+
+                        nabaztagDAO.update(query, updateOperations);
+
+                        response.writeJSON("ok");
+                    }
+                })
                 .get(new Route("/nabaztags/:apikey/subscribe") {
                     @Override
                     public void handle(Request request, Response response, Map<String, String> map) throws Exception {
@@ -362,6 +415,31 @@ public class NabaztagController {
                         response.writeJSON("ok");
                     }
                 });
+    }
+
+    public static DateTime convertJodaTimezone(LocalDateTime date, String srcTz, String destTz) {
+        DateTime srcDateTime = date.toDateTime(DateTimeZone.forID(srcTz));
+        DateTime dstDateTime = srcDateTime.withZone(DateTimeZone.forID(destTz));
+        return dstDateTime.toLocalDateTime().toDateTime();
+    }
+    
+    public static List<String> toUTC(List<String> from, final String timeZone){
+        return Lists.transform(from, new Function<String, String>() {
+            @Override
+            public String apply(@Nullable String s) {
+                Matcher matcher = schedulePattern.matcher(s);
+                if (matcher.matches()) {
+                    String hour = matcher.group(1);
+                    String minute = matcher.group(2);
+                    String day = matcher.group(3);
+
+                    LocalDateTime dateTime = new LocalDateTime(2000, 1, 1, Integer.parseInt(hour), Integer.parseInt(minute));
+                    DateTime utc = convertJodaTimezone(dateTime, timeZone, "UTC");
+                    return String.format("%02d:%02d-%s", utc.hourOfDay().get(), utc.minuteOfHour().get(), day);
+                }
+                return null;
+            }
+        });
     }
 
     public void tts(String mac, String host, String voice, String text) throws Exception {

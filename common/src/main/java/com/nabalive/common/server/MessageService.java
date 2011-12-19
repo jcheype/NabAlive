@@ -8,6 +8,6 @@ import java.util.concurrent.ExecutionException;
  * Date: 11/17/11
  */
 public interface MessageService {
-    void sendMessage(String to, String message) throws ExecutionException;
-    void sendMessage(String to, Packet message) throws ExecutionException;
+    void sendMessage(String to, String message);
+    void sendMessage(String to, Packet message);
 }

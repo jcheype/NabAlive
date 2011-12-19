@@ -1,0 +1,10 @@
+{ "triggers":[ "RFID" ],
+    "fields":[
+        {
+            "type":"INPUT",
+            "label":"Duration (s)",
+            "name":"duration",
+            "values":{}
+        }
+    ]
+}

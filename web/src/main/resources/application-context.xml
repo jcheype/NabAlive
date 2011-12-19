@@ -23,7 +23,7 @@
     <context:component-scan base-package="com.nabalive.applications"/>
 
     <task:scheduler id="taskScheduler"/>
-    <task:executor id="taskExecutor" pool-size="1"/>
+    <task:executor id="taskExecutor" pool-size="10"/>
     <task:annotation-driven executor="taskExecutor" scheduler="taskScheduler"/>
 
     <bean class="com.nabalive.framework.web.SimpleRestHandler" id="restHandler"></bean>

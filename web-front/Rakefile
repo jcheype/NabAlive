@@ -40,9 +40,9 @@ task :watch => [] do
 
     def rebuild
         sh 'rake clean default'
-        sh 'haml' , '-t', 'ugly', "index.haml", "public/index.html"
         sh "cp", "-rf", "image", "public"
         sh 'jammit'
+        sh 'haml' , '-t', 'ugly', "index.haml", "public/index.html"
         
         puts "    OK"
     rescue

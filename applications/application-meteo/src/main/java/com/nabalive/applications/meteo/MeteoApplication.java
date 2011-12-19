@@ -131,11 +131,8 @@ public class MeteoApplication extends ApplicationBase {
         command.append("MU http://karotz.s3.amazonaws.com/applications/weather/fr/temp/" + meteoResult.tomorrowTempHigh + ".mp3\nPL 3\nMW\n");
         command.append("MU http://karotz.s3.amazonaws.com/applications/weather/fr/" + unit + ".mp3\nPL 3\nMW\n");
 
-        try {
-            messageService.sendMessage(mac, command.toString());
-        } catch (ExecutionException e) {
-            logger.error("error in meteo", e);
-        }
+        messageService.sendMessage(mac, command.toString());
+
     }
 
     public String getNodeValue(NodeList nodeList, String nodeName) {
@@ -199,7 +196,7 @@ public class MeteoApplication extends ApplicationBase {
         String city = checkNotNull(applicationConfig.getParameters().get("city")).get(0);
         String country = checkNotNull(applicationConfig.getParameters().get("country")).get(0);
         String unit;
-        if(applicationConfig.getParameters().get("unit") != null)
+        if (applicationConfig.getParameters().get("unit") != null)
             unit = applicationConfig.getParameters().get("unit").get(0);
         else
             unit = "C";

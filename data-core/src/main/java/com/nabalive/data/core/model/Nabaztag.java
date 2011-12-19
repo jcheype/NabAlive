@@ -27,9 +27,17 @@ public class Nabaztag {
     private String apikey;
 
     private ObjectId owner;
+    
+    private String timeZone;
 
     @Indexed
     private Set<Subscription> subscribe = new HashSet<Subscription>();
+
+    @Indexed
+    private Set<String> wakeup = new HashSet<String>();
+
+    @Indexed
+    private Set<String> sleep = new HashSet<String>();
 
     @Transient
     private boolean connected = false;
@@ -135,4 +143,19 @@ public class Nabaztag {
         this.subscribe = subscribe;
     }
 
+    public Set<String> getWakeup() {
+        return wakeup;
+    }
+
+    public Set<String> getSleep() {
+        return sleep;
+    }
+
+    public String getTimeZone() {
+        return timeZone;
+    }
+
+    public void setTimeZone(String timeZone) {
+        this.timeZone = timeZone;
+    }
 }

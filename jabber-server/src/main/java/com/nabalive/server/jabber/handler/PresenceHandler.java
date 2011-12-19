@@ -7,6 +7,9 @@ import org.jboss.netty.channel.MessageEvent;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
  * Created by IntelliJ IDEA.
  * User: Julien Cheype
@@ -15,12 +18,20 @@ import org.w3c.dom.Document;
 
 @Component
 public class PresenceHandler extends JabberBaseHandler {
+    private final Pattern pattern = Pattern.compile(".*/(\\w+)$");
+
     public void onMessage(ChannelHandlerContext ctx, MessageEvent e, Status status, String message, Document document) {
         String id = document.getDocumentElement().getAttribute("id");
         String from = document.getDocumentElement().getAttribute("from");
 
         String reply = "<presence from='" + from + "' to='" + from + "' id='" + id + "'/>";
         write(e.getChannel(), reply);
+
+        Matcher matcher = pattern.matcher(from);
+        if(matcher.find()){
+            String presence = matcher.group(1);
+            status.setPresence(presence);
+        }
 
         status.onEvent(new Event(message, Event.Type.PRESENCE));
     }

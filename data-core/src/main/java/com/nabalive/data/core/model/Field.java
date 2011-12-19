@@ -4,7 +4,9 @@ import com.google.code.morphia.annotations.Embedded;
 
 import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by IntelliJ IDEA.
@@ -28,7 +30,7 @@ public class Field {
     private String name;
 
     @NotNull
-    private List<String> values = new ArrayList<String>();
+    private Map<String,String> values = new HashMap<String, String>();
 
     public Type getType() {
         return type;
@@ -46,11 +48,11 @@ public class Field {
         this.name = name;
     }
 
-    public List<String> getValues() {
+    public Map<String,String> getValues() {
         return values;
     }
 
-    public void setValues(List<String> values) {
+    public void setValues(Map<String,String> values) {
         this.values = values;
     }
 

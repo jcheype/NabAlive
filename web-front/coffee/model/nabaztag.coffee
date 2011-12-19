@@ -47,6 +47,18 @@ class Nabaztag extends Backbone.Model
         $.get( "/nabaztags/#{apikey}/wakeup")
             .success(=> @fetch(); success() if success )
             .error(=> @fetch(); error() if error)
+            
+    timeZone: (timeZone, success, error)=>
+        apikey = @get("apikey")
+        $.get( "/nabaztags/#{apikey}/tz", {"tz": timeZone})
+            .success(=> @fetch(); success() if success )
+            .error(=> @fetch(); error() if error)
+    
+    schedule: (wakeup, sleep, success, error) =>
+        apikey = @get("apikey")
+        $.get( "/nabaztags/#{apikey}/schedule", {"wakeup": wakeup, "sleep": sleep})
+            .success(=> @fetch(); success() if success )
+            .error(=> @fetch(); error() if error)
                 
 this.Nabaztag = Nabaztag
 

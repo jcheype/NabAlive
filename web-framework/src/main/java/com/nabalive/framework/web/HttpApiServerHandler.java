@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.PrintWriter;
+import java.nio.channels.ClosedChannelException;
 import java.util.Map;
 import java.util.UUID;
 
@@ -101,6 +102,9 @@ public class HttpApiServerHandler extends IdleStateAwareChannelHandler {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
+        if(e.getCause() instanceof ClosedChannelException){
+            return;
+        }
         String errorid = UUID.randomUUID().toString();
         logger.error("ERROR HTTP: {}\n", errorid, e.getCause());
 

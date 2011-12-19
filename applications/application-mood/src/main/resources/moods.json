@@ -3,15 +3,15 @@
         "type":"SELECT",
         "label":"Langue",
         "name":"lang",
-        "values":[
-            "br",
-            "de",
-            "es",
-            "fr",
-            "it",
-            "ja-JP",
-            "uk",
-            "us"
-        ]
+        "values":{
+            "br":"Brésil",
+            "de":"Allemand",
+            "es":"Espagnol",
+            "fr":"Français",
+            "it":"Italien",
+            "ja-JP":"Japonais",
+            "uk":"Anglais",
+            "us":"Américain"
+        }
     }
 }

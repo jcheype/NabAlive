@@ -4,13 +4,13 @@
             "type":"INPUT",
             "label":"City",
             "name":"city",
-            "values":[ ]
+            "values":{}
         },
         {
             "type":"INPUT",
             "label":"Country",
             "name":"country",
-            "values":[ ]
+            "values":{}
         }
     ]
 }

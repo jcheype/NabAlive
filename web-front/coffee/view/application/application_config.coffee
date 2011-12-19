@@ -55,7 +55,7 @@ class ApplicationConfigView extends Backbone.View
             if field.type == "SELECT"
                 domField = $(@templateSelect(field))
                 select = domField.find("select")
-                _.each(field.values, (value) => select.append("<option value=\"#{value}\">#{value}</option>") )
+                _.each(field.values, (value, key) => select.append("<option value=\"#{value}\">#{key}</option>") )
                 if @config
                     domField.find("select").val(@config.parameters[field.name])
                 form.append(domField)

@@ -95,12 +95,20 @@ class AppRouter extends Backbone.Router
 
 global = this
 
+refreshCounter = =>
+    $.getJSON('/admin/connected/infos')
+    .success((result)=>
+        $('#connected').html("[#{result.connected}]")
+    )
 
 $(document).ready(=>
     login = new LoginView()
     $('#login').html($(login.render().el))
     
     global.router = new AppRouter()
+    refreshCounter()
+    setInterval(refreshCounter, 15000)
+    
     token = $.Storage.get("token");
     if token
         $.getJSON('user/info', {"token": token})

@@ -6,6 +6,7 @@ import com.nabalive.data.core.model.ApplicationConfig;
 import com.nabalive.data.core.model.Nabaztag;
 import com.ning.http.client.AsyncCompletionHandler;
 import com.ning.http.client.AsyncHttpClient;
+import com.ning.http.client.AsyncHttpClientConfig;
 import com.ning.http.client.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +26,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -34,7 +36,18 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class HoroscopeApplication extends ApplicationBase {
     private static final String BASE_URL_FR = "http://www.horoscope.fr/rss/horoscope/jour/";
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
-    private final AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
+    private AsyncHttpClient asyncHttpClient = new AsyncHttpClient(
+            new AsyncHttpClientConfig.Builder()
+                    .setCompressionEnabled(true)
+                    .setAllowPoolingConnection(true)
+                    .setMaximumConnectionsTotal(1024)
+                    .setRequestTimeoutInMs(5000)
+                    .setConnectionTimeoutInMs(5000)
+                    .setIdleConnectionInPoolTimeoutInMs(30000)
+                    .setMaxRequestRetry(3)
+                    .setExecutorService(Executors.newFixedThreadPool(8))
+                    .build()
+    );
     private final Pattern signPattern = Pattern.compile(".*horoscope_(\\w+)\\.html");
 
     private Map<String, HoroscopeOfDay> horoscopeMap = new HashMap<String, HoroscopeOfDay>();

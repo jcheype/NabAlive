@@ -46,11 +46,6 @@ public class AdminController {
                 .get(new Route("/admin/connected/infos") {
                     @Override
                     public void handle(Request request, Response response, Map<String, String> map) throws Exception {
-                        Token token = TokenUtil.decode(checkNotNull(request.getParamOrHeader("token")), Token.class);
-                        User user = checkNotNull(userDAO.get(token.getUserId()));
-                        if(!user.getPermissions().contains("admin"))
-                            throw new HttpException(HttpResponseStatus.UNAUTHORIZED, "UNAUTHORIZED access");
-
                         Infos infos = new Infos(connectionManager.size());
                         response.writeJSON(infos);
                     }
