@@ -1,0 +1,25 @@
+{ "triggers":[ "RFID" ],
+    "fields":[
+        {
+            "type":"INPUT",
+            "label":"Url to call",
+            "name":"callurl",
+            "values":{}
+        },
+        {
+            "type":"INPUT",
+            "label":"Parameters",
+            "name":"parameters",
+            "values":{}
+        },
+        {
+            "type":"SELECT",
+            "label":"Method",
+            "name":"method",
+            "values":{
+                "GET":"GET",
+                "POST":"POST"
+            }
+        }
+    ]
+}
