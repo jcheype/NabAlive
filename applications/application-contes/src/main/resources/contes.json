@@ -1,0 +1,16 @@
+{   "triggers":[ "RFID" ],
+    "fields":[{
+        "type":"SELECT",
+        "label":"Conte",
+        "name":"conte",
+        "values":{
+            "Aléatoire":"rand",
+            "La nuit avant noël":"http://d39g8zahit2xdb.cloudfront.net/nab/contes/stephy-la-nuit-avant-noel-conte-noel-illustre.mp3",
+            "La valse des loups":"http://d39g8zahit2xdb.cloudfront.net/nab/contes/stephy-la-valse-des-loups-conte-illustre.mp3",
+            "Le petit chaperon rouge":"http://d39g8zahit2xdb.cloudfront.net/nab/contes/stephy-le-petit-chaperon-rouge-conte-illustre.mp3",
+            "Le rock de la sorcière":"http://d39g8zahit2xdb.cloudfront.net/nab/contes/stephy-le-rock-de-la-sorciere-conte-illustre.mp3",
+            "Le vilain petit canard":"http://d39g8zahit2xdb.cloudfront.net/nab/contes/stephy-le-vilain-petit-canard-conte-illustre.mp3",
+            "Petit moustique":"http://d39g8zahit2xdb.cloudfront.net/nab/contes/stephy-petit-moustique-conte-illustre.mp3"
+        }
+    }]
+}
