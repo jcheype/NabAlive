@@ -8,6 +8,7 @@ import com.nabalive.framework.web.Response;
 import com.nabalive.framework.web.Route;
 import com.nabalive.framework.web.SimpleRestHandler;
 import com.nabalive.framework.web.exception.HttpException;
+import com.nabalive.server.web.SendMail;
 import com.nabalive.server.web.Token;
 import com.nabalive.server.web.TokenUtil;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.Map;
+import java.util.UUID;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -89,10 +91,27 @@ public class UserController {
                         User user = checkNotNull(userDAO.findOne("email", email));
                         if (uuid.length() > 0 && uuid.equalsIgnoreCase(user.getResetId())) {
                             Query<User> query = userDAO.createQuery().filter("_id", user.getId());
-                            userDAO.update(query, userDAO.createUpdateOperations().set("password", password).unset("resetId"));
+                            user.setPassword(password);
+                            userDAO.update(query, userDAO.createUpdateOperations().set("password", user.getPassword()).unset("resetId"));
                             response.writeJSON("ok");
                         }
                         throw new HttpException(HttpResponseStatus.INTERNAL_SERVER_ERROR, "bab reset ID");
+                    }
+                })
+                .get(new Route("/user/reset/mail") {
+                    @Override
+                    public void handle(Request request, Response response, Map<String, String> map) throws Exception {
+                        String email = checkNotNull(request.getParam("email")).toLowerCase();
+                        User user = checkNotNull(userDAO.findOne("email", email));
+
+                        Query<User> query = userDAO.createQuery().filter("_id", user.getId());
+                        
+                        String uuid = UUID.randomUUID().toString();
+                        userDAO.update(query, userDAO.createUpdateOperations().set("resetId", uuid ));
+
+                        SendMail.postMail(new String[]{email}, "Reset de mot de passe Nabalive", "http://www.nabalive.com/#reset/"+uuid+"/"+user.getEmail(), "no_reply@nabalive.com");
+
+                        response.writeJSON("ok");
                     }
                 })
                 .get(new Route("/user/info") {

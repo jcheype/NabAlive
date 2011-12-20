@@ -49,14 +49,14 @@ public class ApiController {
     @PostConstruct
     void init() {
         restHandler
-                .get(new Route("/:lang/api.jsp") {
+                .get(new Route("/:lang/api(?:_stream)?.jsp") {
                     @Override
                     public void handle(Request request, Response response, Map<String, String> map) throws Exception {
                         String mac = checkNotNull(request.getParam("sn")).toLowerCase();
                         String token = checkNotNull(request.getParam("token")).toLowerCase();
                         String lang = checkNotNull(map.get("lang")).toLowerCase();
                         String tts = request.getParam("tts");
-                        String urList = request.getParam("urList");
+                        String urlList = request.getParam("urlList");
                         String color = request.getParam("color");
                         String posleft = request.getParam("posleft");
                         String posright = request.getParam("posright");
@@ -78,11 +78,11 @@ public class ApiController {
                         if (tts != null) {
                             String encodedText = URLEncoder.encode(tts, "UTF-8");
                             String url = "http://" + host + "/tts/" + lang + "?text=" + encodedText;
-                            commands.append("MC " + url + "\nMW\n");
+                            commands.append("ST " + url + "\nMW\n");
                         }
-                        if (urList != null) {
-                            for (String url : urList.split("\\|")) {
-                                commands.append("MC " + url + "\nMW\n");
+                        if (urlList != null) {
+                            for (String url : urlList.split("\\|")) {
+                                commands.append("ST " + url + "\nMW\n");
                             }
                         }
 

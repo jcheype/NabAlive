@@ -14,7 +14,7 @@ class LoginView extends Backbone.View
         $(@el).html( @template() )
         $(@el).find('button.login').click(@doLogin)
         $(@el).find('button.register').click(@doRegister)
-        $(@el).find('button.cancel').click(=>
+        $(@el).find('.btn').click(=>
             $('#loginmodal').modal('hide')
             $('#registermodal').modal('hide')
         )

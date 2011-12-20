@@ -31,6 +31,8 @@ class AppRouter extends Backbone.Router
         "applications": "applicationList"
         "nab2nabs": "nab2nabs"
         "doc": "doc"
+        "reset/:uuid/:email":"resetPassword"
+        "reset":"resetMail"
         "*actions": "defaultRoute"
     
 
@@ -93,6 +95,15 @@ class AppRouter extends Backbone.Router
         nab2NabsView = new Nab2NabsView({model: @nabaztagCollection})
         $('#content').html($(nab2NabsView.render().el))
 
+    resetPassword: (uuid, email) =>
+        resetPasswordView = new ResetPasswordView({"uuid": uuid, "email":email})
+        $('#content').html($(resetPasswordView.render().el))
+        
+    resetMail: (uuid, email) =>
+        resetMailView = new ResetMailView()
+        $('#content').html($(resetMailView.render().el))
+        
+
 global = this
 
 refreshCounter = =>
@@ -118,13 +129,15 @@ $(document).ready(=>
         )
         .error(=>
             global.router.setIsLogin(false)
-            global.router.navigate("login", true)
+            if(window.location.hash != '#login' && window.location.hash.indexOf('#reset') != 0)
+                global.router.navigate("login", true)
         )
         .complete(=>
             Backbone.history.start()
         )
     else
         global.router.setIsLogin(false)
-        global.router.navigate("home", true)
+        if(window.location.hash != '#login' && window.location.hash.indexOf('#reset') != 0)
+            global.router.navigate("home", true)
         Backbone.history.start()
 )

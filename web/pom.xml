@@ -28,6 +28,16 @@
             <version>2.6</version>
         </dependency>
         <dependency>
+            <groupId>javax.mail</groupId>
+            <artifactId>mail</artifactId>
+            <version>1.4.4</version>
+        </dependency>
+        <dependency>
+            <groupId>com.nabalive</groupId>
+            <artifactId>application-contes</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
             <groupId>com.nabalive</groupId>
             <artifactId>application-callurl</artifactId>
             <version>1.0-SNAPSHOT</version>

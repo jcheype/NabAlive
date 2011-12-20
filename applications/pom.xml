@@ -14,6 +14,7 @@
     <name>Applications</name>
 
     <modules>
+        <module>application-contes</module>
         <module>application-callurl</module>
         <module>application-meteo</module>
         <module>application-clock</module>
