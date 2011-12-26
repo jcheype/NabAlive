@@ -7,6 +7,7 @@ import com.nabalive.data.core.dao.ApplicationStoreDAO;
 import com.nabalive.data.core.dao.NabaztagDAO;
 import com.nabalive.data.core.model.ApplicationConfig;
 import com.nabalive.data.core.model.Nabaztag;
+import com.nabalive.data.core.model.Tag;
 import com.nabalive.framework.web.Request;
 import com.nabalive.framework.web.Response;
 import com.nabalive.framework.web.Route;
@@ -58,7 +59,7 @@ public class RfidController {
                     @Override
                     public void handle(Request request, Response response, Map<String, String> map) throws Exception {
                         String mac = checkNotNull(request.getParam("sn")).toLowerCase();
-                        String tag = checkNotNull(request.getParam("t")).toLowerCase();
+                        String tagValue = checkNotNull(request.getParam("t")).toLowerCase();
                         String host = request.request.getHeader("Host");
 
                         Nabaztag nabaztag = nabaztagDAO.findOne("macAddress", mac);
@@ -68,13 +69,16 @@ public class RfidController {
                             return;
                         }
 
-                        if (!nabaztag.getTags().contains(tag)) {
+                        if (!nabaztag.hasTag(tagValue)) {
+                            Tag tag = new Tag();
+                            tag.setValue(tagValue);
+                            tag.setName(tagValue);
                             nabaztag.getTags().add(tag);
                             nabaztagDAO.save(nabaztag);
                             nabaztagController.tts(nabaztag.getMacAddress(), host, "fr", "Nouveau tag ajouté");
                         } else {
                             for (ApplicationConfig applicationConfig : nabaztag.getApplicationConfigList()) {
-                                if (applicationConfig.getTags().contains(tag)) {
+                                if (applicationConfig.getTags().contains(tagValue)) {
                                     String apikey = applicationConfig.getApplicationStoreApikey();
                                     Application application = applicationManager.getApplication(apikey);
                                     application.onStartup(nabaztag, applicationConfig);

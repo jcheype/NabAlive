@@ -27,6 +27,7 @@ public class StaticController {
     public void init() {
         restHandler.staticServe("/", staticFileServerHandler);
         restHandler.staticServe("/index.html", staticFileServerHandler);
+        restHandler.staticServe("/index2.html", staticFileServerHandler);
         restHandler.staticServe("/assets/.*", staticFileServerHandler);
         restHandler.staticServe("/image/.*", staticFileServerHandler);
         restHandler.staticServe("/css/.*", staticFileServerHandler);

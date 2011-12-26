@@ -49,7 +49,7 @@ public class ApiController {
     @PostConstruct
     void init() {
         restHandler
-                .get(new Route("/:lang/api(?:_stream)?.jsp") {
+                .get(new Route("(?:/vl)?/:lang/api(?:_stream)?.jsp") {
                     @Override
                     public void handle(Request request, Response response, Map<String, String> map) throws Exception {
                         String mac = checkNotNull(request.getParam("sn")).toLowerCase();
@@ -65,7 +65,13 @@ public class ApiController {
 
                         String host = request.request.getHeader("Host");
 
-                        Nabaztag nabaztag = checkNotNull(nabaztagDAO.findOne("macAddress", mac));
+                        Nabaztag nabaztag;
+                        try{
+                            nabaztag = checkNotNull(nabaztagDAO.findOne("macAddress", mac));
+                        }catch(NullPointerException e){
+                            throw new HttpException(HttpResponseStatus.UNAUTHORIZED, "mac address doesn't exists");
+                        }
+                        
                         if (!token.equalsIgnoreCase(nabaztag.getApikey())) {
                             throw new HttpException(HttpResponseStatus.UNAUTHORIZED, "token is not valid");
                         }

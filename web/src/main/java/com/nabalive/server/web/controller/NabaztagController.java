@@ -4,14 +4,14 @@ import com.google.code.morphia.query.Query;
 import com.google.code.morphia.query.UpdateOperations;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.mongodb.MongoException;
 import com.nabalive.common.server.MessageService;
 import com.nabalive.data.core.dao.NabaztagDAO;
 import com.nabalive.data.core.dao.UserDAO;
-import com.nabalive.data.core.model.ApplicationConfig;
-import com.nabalive.data.core.model.Nabaztag;
-import com.nabalive.data.core.model.Subscription;
-import com.nabalive.data.core.model.User;
+import com.nabalive.data.core.model.*;
 import com.nabalive.framework.web.Request;
 import com.nabalive.framework.web.Response;
 import com.nabalive.framework.web.Route;
@@ -24,6 +24,7 @@ import com.nabalive.server.web.Token;
 import com.nabalive.server.web.TokenUtil;
 import org.bson.types.ObjectId;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.TypeReference;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.jboss.netty.handler.codec.http.HttpVersion;
@@ -56,7 +57,6 @@ public class NabaztagController {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ObjectMapper mapper = new ObjectMapper(); // can reuse, share globally
     private final String OPERATIONNEL_URL = "http://karotz.s3.amazonaws.com/nab/operationnel.mp3";
-    private final static  Pattern schedulePattern = Pattern.compile("(\\d+):(\\d+)-(\\d)");
 
     @Autowired
     private SimpleRestHandler restHandler;
@@ -90,7 +90,7 @@ public class NabaztagController {
                         response.writeJSON(nabaztagList);
                     }
                 })
-                .post(new Route("/nabaztags", ".*/json.*") {
+                .post(new Route("/nabaztags", ".*json.*") {
                     @Override
                     public void handle(Request request, Response response, Map<String, String> map) throws Exception {
                         Token token = TokenUtil.decode(checkNotNull(request.getParamOrHeader("token")), Token.class);
@@ -108,7 +108,13 @@ public class NabaztagController {
                         nabaztag.setApikey(UUID.randomUUID().toString());
                         nabaztag.setOwner(token.getUserId());
 
-                        nabaztagDAO.save(nabaztag);
+                        try {
+                            nabaztagDAO.save(nabaztag);
+                        } catch (MongoException.DuplicateKey e) {
+                            ImmutableMap<String, String> error = (new ImmutableMap.Builder<String, String>()).put("error", "Adresse mac déjà enregistrée").build();
+                            response.writeJSON(error);
+                            return;
+                        }
 
                         messageService.sendMessage(mac, "ST " + OPERATIONNEL_URL + "\nMW\n");
                         response.writeJSON(nabaztag);
@@ -131,7 +137,13 @@ public class NabaztagController {
                         nabaztag.setApikey(UUID.randomUUID().toString());
                         nabaztag.setOwner(token.getUserId());
 
-                        nabaztagDAO.save(nabaztag);
+                        try {
+                            nabaztagDAO.save(nabaztag);
+                        } catch (MongoException.DuplicateKey e) {
+                            ImmutableMap<String, String> error = (new ImmutableMap.Builder<String, String>()).put("error", "Adresse mac déjà enregistrée").build();
+                            response.writeJSON(error);
+                            return;
+                        }
 
                         messageService.sendMessage(mac, "ST " + OPERATIONNEL_URL + "\nMW\n");
                         response.writeJSON(nabaztag);
@@ -281,6 +293,20 @@ public class NabaztagController {
                         response.writeJSON("ok");
                     }
                 })
+                .post(new Route("/nabaztags/:apikey/tags", ".*json.*") {
+                    @Override
+                    public void handle(Request request, Response response, Map<String, String> map) throws Exception {
+                        String apikey = checkNotNull(map.get("apikey"));
+                        List<Tag> tagList = mapper.readValue(request.content, new TypeReference<List<Tag>>() {
+                        });
+
+                        Nabaztag nabaztag = checkNotNull(nabaztagDAO.findOne("apikey", apikey));
+                        nabaztagDAO.update(
+                                nabaztagDAO.createQuery().filter("apikey", apikey),
+                                nabaztagDAO.createUpdateOperations().set("tags", tagList));
+                        response.writeJSON("ok");
+                    }
+                })
                 .get(new Route("/nabaztags/:apikey/sleep") {
                     @Override
                     public void handle(Request request, Response response, Map<String, String> map) throws Exception {
@@ -330,15 +356,16 @@ public class NabaztagController {
 
                         UpdateOperations<Nabaztag> updateOperations = nabaztagDAO.createUpdateOperations();
                         if (!sleep.isEmpty()) {
-                            List<String> utc = toUTC(sleep, nabaztag.getTimeZone());
-                            logger.debug("sleep {}", utc);
-                            updateOperations.set("sleep", utc);
+                            nabaztag.setSleepLocal(sleep);
+                            Set<String> nabaztagSleep = nabaztag.getSleep();
+                            logger.debug("sleep {}", nabaztagSleep);
+                            updateOperations.set("sleep", nabaztagSleep);
                         }
                         if (!wakeup.isEmpty()) {
-                            List<String> utc = toUTC(wakeup, nabaztag.getTimeZone());
-
-                            logger.debug("wakeup {}", utc);
-                            updateOperations.set("wakeup", utc);
+                            nabaztag.setWakeupLocal(wakeup);
+                            Set<String> nabaztagWakeup = nabaztag.getWakeup();
+                            logger.debug("wakeup {}", nabaztagWakeup);
+                            updateOperations.set("wakeup", nabaztagWakeup);
                         }
 
                         nabaztagDAO.update(query, updateOperations);
@@ -417,30 +444,6 @@ public class NabaztagController {
                 });
     }
 
-    public static DateTime convertJodaTimezone(LocalDateTime date, String srcTz, String destTz) {
-        DateTime srcDateTime = date.toDateTime(DateTimeZone.forID(srcTz));
-        DateTime dstDateTime = srcDateTime.withZone(DateTimeZone.forID(destTz));
-        return dstDateTime.toLocalDateTime().toDateTime();
-    }
-    
-    public static List<String> toUTC(List<String> from, final String timeZone){
-        return Lists.transform(from, new Function<String, String>() {
-            @Override
-            public String apply(@Nullable String s) {
-                Matcher matcher = schedulePattern.matcher(s);
-                if (matcher.matches()) {
-                    String hour = matcher.group(1);
-                    String minute = matcher.group(2);
-                    String day = matcher.group(3);
-
-                    LocalDateTime dateTime = new LocalDateTime(2000, 1, 1, Integer.parseInt(hour), Integer.parseInt(minute));
-                    DateTime utc = convertJodaTimezone(dateTime, timeZone, "UTC");
-                    return String.format("%02d:%02d-%s", utc.hourOfDay().get(), utc.minuteOfHour().get(), day);
-                }
-                return null;
-            }
-        });
-    }
 
     public void tts(String mac, String host, String voice, String text) throws Exception {
         StringBuilder commands = new StringBuilder();

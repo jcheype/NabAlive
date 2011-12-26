@@ -10,10 +10,28 @@
 <configuration scan="true" scanPeriod="30 seconds">
   <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
-      <pattern>%d{HH:mm:ss,SSS} %-5p %c - %m%n</pattern>
+        <pattern>%d{HH:mm:ss,SSS} %-5p %c - %m%n</pattern>
     </encoder>
   </appender>
-  <root level="DEBUG">
-    <appender-ref ref="console"/>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>nabalive.log</file>
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <fileNamePattern>nabalive.%i.log.zip</fileNamePattern>
+            <minIndex>1</minIndex>
+            <maxIndex>5</maxIndex>
+        </rollingPolicy>
+
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>50MB</maxFileSize>
+        </triggeringPolicy>
+        <encoder>
+            <pattern>%-4relative [%thread] %-5level %logger{35} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+  <root level="INFO">
+    <appender-ref ref="FILE"/>
   </root>
 </configuration>

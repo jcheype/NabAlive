@@ -1,5 +1,6 @@
 package com.nabalive.server.web;
 
+import com.nabalive.data.core.model.Nabaztag;
 import com.nabalive.server.web.controller.NabaztagController;
 import org.junit.Test;
 
@@ -13,9 +14,9 @@ public class AppTest {
     @Test
     public void utcConversionTest(){
         List<String> sleep = new ArrayList<String>();
-        sleep.add("04:05-7");
+        sleep.add("04:05-1");
 
-        List<String> strings = NabaztagController.toUTC(sleep, "Europe/Paris");
+        List<String> strings = Nabaztag.changeTz(sleep, "Europe/Paris", "UTC");
         System.out.println(strings);
 
     }
