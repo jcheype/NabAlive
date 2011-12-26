@@ -1,4 +1,5 @@
-{ "triggers":[ "RFID" ],
+{
+    "triggers":[ "RFID" ],
     "fields":[
         {
             "type":"INPUT",
@@ -6,5 +7,6 @@
             "name":"duration",
             "values":{}
         }
-    ]
+    ],
+    "description": "Bien dans son corps, bien dans sa tête ! Nabaztag a besoin de pratiquer régulièrement son Tai-chi. Au programme, étirement des oreilles et couleurs zénifiantes !"
 }

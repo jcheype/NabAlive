@@ -21,5 +21,6 @@
                 "POST":"POST"
             }
         }
-    ]
+    ],
+    "description" : "appelez une URL sur le web au passage d'un RFID"
 }

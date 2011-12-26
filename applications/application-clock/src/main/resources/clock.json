@@ -539,14 +539,16 @@
         "label":"Langue",
         "name":"lang",
         "values":{
-            "br":"Brésil",
-            "de":"Allemand",
-            "es":"Espagnol",
-            "fr":"Français",
-            "it":"Italien",
-            "ja-JP":"Japonais",
-            "uk":"Anglais",
-            "us":"Américain"
+            "Brésil":"br",
+            "Allemand":"de",
+            "Espagnol":"es",
+            "Français":"fr",
+            "Italien":"it",
+            "Japonais":"ja-JP",
+            "Anglais":"uk",
+            "Américain":"us"
         }
     }
-]}
+],
+"description":"Rythmez le temps qui passe avec cette horloge parlante qui sait rester sobre ou vous réserver des surprises"
+}

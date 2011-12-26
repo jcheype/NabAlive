@@ -11,6 +11,22 @@
             "label":"Country",
             "name":"country",
             "values":{}
+        },
+        {
+            "type":"SELECT",
+            "label":"Langue",
+            "name":"lang",
+            "values":{
+                "br":"Brésil",
+                "de":"Allemand",
+                "es":"Espagnol",
+                "fr":"Français",
+                "it":"Italien",
+                "ja-JP":"Japonais",
+                "uk":"Anglais",
+                "us":"Américain"
+            }
         }
-    ]
+    ],
+    "description": "Nabaztag vous donne les prévisions météo (état du ciel et températures du jour et du lendemain) des villes de votre choix."
 }

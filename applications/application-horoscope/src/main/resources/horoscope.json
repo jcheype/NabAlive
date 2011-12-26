@@ -6,19 +6,20 @@
             "label":"Signe",
             "name":"sign",
             "values":{
-                "belier":"Bélier",
-                "taureau":"Taureau",
-                "gemeaux":"Gémeaux",
-                "cancer":"Cancer",
-                "lion":"Lion",
-                "vierge":"Vierge",
-                "balance":"Balance",
-                "scorpion":"Scorpion",
-                "sagittaire":"Sagitaire",
-                "capricorne":"Capricorne",
-                "verseau":"Verseau",
-                "poissons":"Poissons"
+                "Bélier":"belier",
+                "Taureau":"taureau",
+                "Gémeaux":"gemeaux",
+                "Cancer":"cancer",
+                "Lion":"lion",
+                "Vierge":"vierge",
+                "Balance":"balance",
+                "Scorpion":"scorpion",
+                "Sagittaire":"sagittaire",
+                "Capricorne":"capricorne",
+                "Verseau":"verseau",
+                "Poissons":"poissons"
             }
         }
-    ]
+    ],
+    "description":"Écoutez votre horoscope quotidien."
 }

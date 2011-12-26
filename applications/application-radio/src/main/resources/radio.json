@@ -40,5 +40,7 @@
             "name":"custom",
             "values":{}
         }
-    ]
+    ],
+    "description": "Votre Nabaztag lance la webradio que vous choisissez."
+
 }

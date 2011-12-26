@@ -27,10 +27,8 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import static com.google.common.base.Objects.firstNonNull;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @Component("meteo")
@@ -107,29 +105,29 @@ public class MeteoApplication extends ApplicationBase {
 
     }
 
-    private String getCondition(String condition) {
+    private String getCondition(String condition, String lang) {
         int code = getConditionCode(condition);
         if (code > -1)
-            return "MU http://karotz.s3.amazonaws.com/applications/weather/fr/sky/" + code + ".mp3\nPL 3\nMW\n";
+            return "MU http://karotz.s3.amazonaws.com/applications/weather/"+lang+"/sky/" + code + ".mp3\nPL 3\nMW\n";
         return "";
     }
 
 
-    private void sendMeteo(String mac, MeteoResult meteoResult) {
+    private void sendMeteo(String mac, MeteoResult meteoResult, String lang) {
         logger.debug("sending meteo: {}", meteoResult);
         StringBuilder command = new StringBuilder();
 
         String unit = "C".equals(meteoResult.unit) ? "degree" : "farenheit";
 
-        command.append("MU http://karotz.s3.amazonaws.com/applications/weather/fr/signature.mp3\nPL 3\nMW\n");
-        command.append("MU http://karotz.s3.amazonaws.com/applications/weather/fr/today.mp3\nPL 3\nMW\n");
-        command.append(getCondition(meteoResult.todayCondition));
-        command.append("MU http://karotz.s3.amazonaws.com/applications/weather/fr/temp/" + meteoResult.todayTempHigh + ".mp3\nPL 3\nMW\n");
-        command.append("MU http://karotz.s3.amazonaws.com/applications/weather/fr/degree.mp3\nPL 3\nMW\n");
-        command.append("MU http://karotz.s3.amazonaws.com/applications/weather/fr/tomorrow.mp3\nPL 3\nMW\n");
-        command.append(getCondition(meteoResult.tomorrowCondition));
-        command.append("MU http://karotz.s3.amazonaws.com/applications/weather/fr/temp/" + meteoResult.tomorrowTempHigh + ".mp3\nPL 3\nMW\n");
-        command.append("MU http://karotz.s3.amazonaws.com/applications/weather/fr/" + unit + ".mp3\nPL 3\nMW\n");
+        command.append("MU http://karotz.s3.amazonaws.com/applications/weather/"+lang+"/signature.mp3\nPL 3\nMW\n");
+        command.append("MU http://karotz.s3.amazonaws.com/applications/weather/"+lang+"/today.mp3\nPL 3\nMW\n");
+        command.append(getCondition(meteoResult.todayCondition, lang));
+        command.append("MU http://karotz.s3.amazonaws.com/applications/weather/"+lang+"/temp/" + meteoResult.todayTempHigh + ".mp3\nPL 3\nMW\n");
+        command.append("MU http://karotz.s3.amazonaws.com/applications/weather/"+lang+"/degree.mp3\nPL 3\nMW\n");
+        command.append("MU http://karotz.s3.amazonaws.com/applications/weather/"+lang+"/tomorrow.mp3\nPL 3\nMW\n");
+        command.append(getCondition(meteoResult.tomorrowCondition, lang));
+        command.append("MU http://karotz.s3.amazonaws.com/applications/weather/"+lang+"/temp/" + meteoResult.tomorrowTempHigh + ".mp3\nPL 3\nMW\n");
+        command.append("MU http://karotz.s3.amazonaws.com/applications/weather/"+lang+"/" + unit + ".mp3\nPL 3\nMW\n");
 
         messageService.sendMessage(mac, command.toString());
 
@@ -146,7 +144,7 @@ public class MeteoApplication extends ApplicationBase {
         return null;
     }
 
-    public void httpCall(final String mac, final String city, final String country, final String unit, final String key) throws UnsupportedEncodingException {
+    public void httpCall(final String mac, final String city, final String country, final String unit, final String key, final String lang) throws UnsupportedEncodingException {
         StringBuilder url = new StringBuilder(BASE_URL);
         url.append("?weather=").append(URLEncoder.encode(city + "," + country, "UTF-8"));
         url.append("&hl=fr");
@@ -176,7 +174,7 @@ public class MeteoApplication extends ApplicationBase {
                             unit
                     );
                     meteoCache.asMap().putIfAbsent(key, meteoResult);
-                    sendMeteo(mac, meteoResult);
+                    sendMeteo(mac, meteoResult, lang);
                     return response;
                 }
 
@@ -201,13 +199,19 @@ public class MeteoApplication extends ApplicationBase {
         else
             unit = "C";
 
+        String lang = "fr";
+        if (applicationConfig.getParameters().get("lang") != null)
+            lang = applicationConfig.getParameters().get("lang").get(0);
+
+
+
         String key = city + "|" + country + "|" + unit;
 
         MeteoResult meteoResult = meteoCache.asMap().get(key);
         if (meteoResult == null) {
-            httpCall(nabaztag.getMacAddress(), city, country, unit, key);
+            httpCall(nabaztag.getMacAddress(), city, country, unit, key, lang);
         } else
-            sendMeteo(nabaztag.getMacAddress(), meteoResult);
+            sendMeteo(nabaztag.getMacAddress(), meteoResult, lang);
     }
 
     class MeteoResult {
