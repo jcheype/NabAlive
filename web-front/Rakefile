@@ -43,6 +43,7 @@ task :watch => [] do
         sh "cp", "-rf", "image", "public"
         sh 'jammit'
         sh 'haml' , '-t', 'ugly', "index.haml", "public/index.html"
+        sh 'haml' , '-t', 'ugly', "index2.haml", "public/index2.html"
         
         puts "    OK"
     rescue

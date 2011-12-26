@@ -22,8 +22,12 @@ class NabaztagAddView extends Backbone.View
         )
         nab.save(params,{
             success: (newNab) =>
-                router.nabaztagCollection.add(newNab)
-                router.navigate("nabaztag/list", true)
+                
+                if newNab.attributes.error
+                    router.info.alert(newNab.attributes.error, "error")
+                else
+                    router.nabaztagCollection.add(newNab)
+                    router.navigate("nabaztag/list", true)
             error: =>
                 router.info.alert("Le nabaztag ne semble pas connecté.", "error")
             

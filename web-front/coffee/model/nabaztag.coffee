@@ -59,6 +59,20 @@ class Nabaztag extends Backbone.Model
         $.get( "/nabaztags/#{apikey}/schedule", {"wakeup": wakeup, "sleep": sleep})
             .success(=> @fetch(); success() if success )
             .error(=> @fetch(); error() if error)
+    
+    saveTags: (tags, success, error)=>
+        apikey = @get("apikey")
+
+        $.ajax({
+                type: "POST",
+                url: "/nabaztags/#{apikey}/tags",
+                data: JSON.stringify(tags),
+                success: => @fetch(); success() if success,
+                error: => @fetch(); error() if error,
+                dataType: "json",
+                contentType: "application/json",
+                processData: false
+              });
                 
 this.Nabaztag = Nabaztag
 

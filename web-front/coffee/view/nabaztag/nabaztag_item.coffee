@@ -2,6 +2,7 @@ class NabaztagItemView extends Backbone.View
     events:
         'click .nab .delete' : "deleteClick"
         'click .nab .btn.action'   : 'actionClick'
+        'click .nab .btn.config'   : 'configClick'
    
     template: JST['nabaztag/nabaztag_item']
    
@@ -42,6 +43,10 @@ class NabaztagItemView extends Backbone.View
         console?.log("actionClick")
         if @model.get("connected")
             router.navigate("nabaztag/action/#{@model.id}", true)
+            
+    configClick: =>
+        console?.log("configClick")
+        router.navigate("nabaztag/config/#{@model.id}", true)
     
     deleteClick: =>
         console?.log("deleteClick")

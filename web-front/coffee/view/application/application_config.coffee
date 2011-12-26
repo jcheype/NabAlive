@@ -55,14 +55,15 @@ class ApplicationConfigView extends Backbone.View
             if field.type == "SELECT"
                 domField = $(@templateSelect(field))
                 select = domField.find("select")
-                _.each(field.values, (value, key) => select.append("<option value=\"#{value}\">#{key}</option>") )
+                keys = _.keys(field.values).sort()
+                _.each(keys, (key) => select.append("<option value=\"#{field.values[key]}\">#{key}</option>") )
                 if @config
                     domField.find("select").val(@config.parameters[field.name])
                 form.append(domField)
         )
         
     isSelected: (tag) =>
-        return @config && _.include(@config.tags, tag)
+        return @config && _.include(@config.tags, tag.value)
         
     addRfid: =>
         field = $(@templateRfid())
@@ -73,7 +74,7 @@ class ApplicationConfigView extends Backbone.View
             console?.log("tag", tag)
             s = ""
             s = 'selected="selected"' if @isSelected(tag)
-            select.append("<option "+s+" value=\"#{tag}\">#{tag}</option>")
+            select.append("<option "+s+" value=\"#{tag.value}\">#{tag.name}</option>")
         )
         console?.log("field: ", field)
         console?.log("select: ", select)

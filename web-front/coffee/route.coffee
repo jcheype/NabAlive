@@ -1,5 +1,6 @@
 class AppRouter extends Backbone.Router
     templateDoc: JST['info/doc']
+    templateConnection: JST['info/connection']
     
     initialize: =>
         @isLogin = false
@@ -28,9 +29,11 @@ class AppRouter extends Backbone.Router
         "nabaztag/add": "nabaztagAdd"
         "nabaztag/:mac/appinstall/:apikey": "nabaztagInstallApp"
         "nabaztag/:mac/appinstall/:apikey/:uuid": "nabaztagInstallApp"
+        "nabaztag/config/:mac": "nabaztagConfig"
         "applications": "applicationList"
         "nab2nabs": "nab2nabs"
         "doc": "doc"
+        "connection": "connection"
         "reset/:uuid/:email":"resetPassword"
         "reset":"resetMail"
         "*actions": "defaultRoute"
@@ -45,6 +48,9 @@ class AppRouter extends Backbone.Router
     
     doc: =>
         $('#content').html(@templateDoc())
+        
+    connection: =>
+        $('#content').html(@templateConnection())
 
     onLogin: =>
         console?.log("onLogin")
@@ -67,6 +73,13 @@ class AppRouter extends Backbone.Router
             console?.log("nab",nab)
             nabaztagActionView = new NabaztagActionView({model: nab})
             $('#content').html($(nabaztagActionView.render().el))
+        )
+        
+    nabaztagConfig: (id)=>
+        @nabaztagCollection.getAndRun(id, (nab)=>
+            console?.log("nab",nab)
+            nabaztagConfigView = new NabaztagConfigView({model: nab})
+            $('#content').html($(nabaztagConfigView.render().el))
         )
 
     nabaztagAdd: =>
@@ -109,7 +122,7 @@ global = this
 refreshCounter = =>
     $.getJSON('/admin/connected/infos')
     .success((result)=>
-        $('#connected').html("[#{result.connected}]")
+        $('#connected').html("[#{result.connected}] lapins connectés")
     )
 
 $(document).ready(=>
@@ -129,7 +142,7 @@ $(document).ready(=>
         )
         .error(=>
             global.router.setIsLogin(false)
-            if(window.location.hash != '#login' && window.location.hash.indexOf('#reset') != 0)
+            if(window.location.hash != '#login' && window.location.hash != '#connection' && window.location.hash.indexOf('#reset') != 0)
                 global.router.navigate("login", true)
         )
         .complete(=>
@@ -137,7 +150,7 @@ $(document).ready(=>
         )
     else
         global.router.setIsLogin(false)
-        if(window.location.hash != '#login' && window.location.hash.indexOf('#reset') != 0)
+        if(window.location.hash != '#login' && window.location.hash != '#connection' && window.location.hash.indexOf('#reset') != 0)
             global.router.navigate("home", true)
         Backbone.history.start()
 )

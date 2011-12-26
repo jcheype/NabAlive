@@ -1,0 +1,8 @@
+.configPanel
+    .configItem.tags
+        :each tag in tags
+            .clearfix
+                %label(for="#{tag.value}") #{tag.value}
+                %input(name="#{tag.value}" value="#{tag.name}")
+                %a.small.btn.label.danger X
+        %button.btn.primary.save Save Tags

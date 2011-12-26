@@ -45,14 +45,14 @@ class NabaztagActionView extends Backbone.View
         $days = $(@el).find('.days')
         
         sleepValue={}
-        _.each(@model.get("sleep"), (s) =>
+        _.each(@model.get("sleepLocal"), (s) =>
             sp = s.split("-")
             day = sp[1]
             time=sp[0].split(":")
             sleepValue[day] = time
         )
         wakeupValue={}
-        _.each(@model.get("wakeup"), (s) =>
+        _.each(@model.get("wakeupLocal"), (s) =>
             sp = s.split("-")
             day = sp[1]
             time=sp[0].split(":")

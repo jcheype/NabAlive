@@ -9,7 +9,16 @@ class ApplicationItemView extends Backbone.View
         @model.bind('change', @render)
    
     render: =>
-        $(@el).html( @template(@model.toJSON()) )
+        jsonModel = @model.toJSON()
+        jsonModel.description += "<br/><ul>"
+        if(jsonModel.triggers.length == 1 && jsonModel.triggers[0] == "RFID")
+            jsonModel.description += "<li>Utilisable exclusivement avec Nanoz ou Stampz</li>"
+        else
+            jsonModel.description += "<li>Utilisable avec Nanoz ou Stampz</li>" if _.include(jsonModel.triggers, "RFID")
+            jsonModel.description += "<li>Declenchement automatique</li>" if _.include(jsonModel.triggers, "PERMANENT")
+        
+        jsonModel.description += "</ul>"
+        $(@el).html( @template(jsonModel) )
         this
     
     installClick: =>

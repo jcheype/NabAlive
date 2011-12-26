@@ -13,7 +13,7 @@
 }
 
 body{
-    background-image:url('/image/bg.jpg');
+    background-image:url('http://dl7l6a5kdjekq.cloudfront.net/image/bg_12345.jpg');
     background-repeat:no-repeat;
     background-attachment:fixed;
     background-position:center top;
@@ -103,13 +103,19 @@ input{
             }
         }
     }
-    .footer{
+    .action{
         height: auto;
-        width:100%;
+        float:right;
+    }
+    .doc{
+        height: auto;
         float:left;
+        width:100%;
     }
 }
-
+.applicationCollection{
+    padding-top: 90px;
+}
 .applicationItem{
     float:left;
     height: 64px;
@@ -153,8 +159,17 @@ input{
 }
 
 #info{
-    position:absolute;
+    position:fixed;
     top:60;
     right:10;
     width: 220px;
+}
+
+#badge{
+    height: 130px; 
+    position: fixed; 
+    top: 0px;  
+    right: 0px; 
+    z-index: 10001; 
+    overflow: visible;
 }

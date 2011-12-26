@@ -13,6 +13,7 @@ class ApplicationCollectionView extends Backbone.View
         @model.each( (app) ->
             col.append(new ApplicationItemView({model: app}).render().el)
         )
+        $(@el).find("div[rel=popover]").popover({offset: 10, html: true})
         this
 
 this.ApplicationCollectionView = ApplicationCollectionView
