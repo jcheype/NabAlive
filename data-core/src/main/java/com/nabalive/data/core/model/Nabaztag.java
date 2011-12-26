@@ -1,10 +1,18 @@
 package com.nabalive.data.core.model;
 
 import com.google.code.morphia.annotations.*;
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 import org.bson.types.ObjectId;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDateTime;
 
+import javax.annotation.Nullable;
 import javax.validation.constraints.NotNull;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by IntelliJ IDEA.
@@ -14,6 +22,8 @@ import java.util.*;
 
 @Entity("nabaztag")
 public class Nabaztag {
+    private final static Pattern schedulePattern = Pattern.compile("(\\d+):(\\d+)-(\\d)");
+
     @Id
     private ObjectId id;
 
@@ -27,7 +37,7 @@ public class Nabaztag {
     private String apikey;
 
     private ObjectId owner;
-    
+
     private String timeZone;
 
     @Indexed
@@ -45,7 +55,7 @@ public class Nabaztag {
     @Embedded()
     List<ApplicationConfig> applicationConfigList = new ArrayList<ApplicationConfig>();
 
-    List<String> tags = new ArrayList<String>();
+    List<Tag> tags = new ArrayList<Tag>();
 
 
     public ObjectId getId() {
@@ -127,11 +137,11 @@ public class Nabaztag {
         this.connected = connected;
     }
 
-    public List<String> getTags() {
+    public List<Tag> getTags() {
         return tags;
     }
 
-    public void setTags(List<String> tags) {
+    public void setTags(List<Tag> tags) {
         this.tags = tags;
     }
 
@@ -157,5 +167,79 @@ public class Nabaztag {
 
     public void setTimeZone(String timeZone) {
         this.timeZone = timeZone;
+    }
+
+    public boolean hasTag(String tagValue) {
+        for (Tag tag : tags) {
+            if (tag.getValue().equals(tagValue))
+                return true;
+        }
+        return false;
+    }
+
+
+    public void setSleepLocal(List<String> localSleep){
+        List<String> utc = Nabaztag.changeTz(localSleep, getTimeZone(), "UTC");
+        getSleep().clear();
+        for(String schedule: utc)
+        {
+            getSleep().add(schedule);
+        }
+    }
+
+    public void setWakeupLocal(List<String> localWakeup){
+        List<String> utc = Nabaztag.changeTz(localWakeup, getTimeZone(), "UTC");
+        getWakeup().clear();
+        for(String schedule: utc)
+        {
+            getWakeup().add(schedule);
+        }
+    }
+
+    public List<String> getSleepLocal(){
+        ArrayList<String> result = new ArrayList<String>();
+        ArrayList<String> list = new ArrayList<String>(getSleep());
+        List<String> local = Nabaztag.changeTz(list, "UTC", getTimeZone());
+        for(String schedule: local)
+        {
+            result.add(schedule);
+        }
+        return result;
+    }
+
+    public List<String> getWakeupLocal(){
+        ArrayList<String> result = new ArrayList<String>();
+        ArrayList<String> list = new ArrayList<String>(getWakeup());
+        List<String> local = Nabaztag.changeTz(list, "UTC", getTimeZone());
+        for(String schedule: local)
+        {
+            result.add(schedule);
+        }
+        return result;
+    }
+
+    public static DateTime convertJodaTimezone(LocalDateTime date, String srcTz, String destTz) {
+        DateTime srcDateTime = date.toDateTime(DateTimeZone.forID(srcTz));
+        DateTime dstDateTime = srcDateTime.withZone(DateTimeZone.forID(destTz));
+        return dstDateTime.toLocalDateTime().toDateTime();
+    }
+
+    public static List<String> changeTz(List<String> from, final String fromTimeZone, final String toTimeZone) {
+        return Lists.transform(from, new Function<String, String>() {
+            @Override
+            public String apply(@Nullable String s) {
+                Matcher matcher = schedulePattern.matcher(s);
+                if (matcher.matches()) {
+                    String hour = matcher.group(1);
+                    String minute = matcher.group(2);
+                    String day = matcher.group(3);
+
+                    LocalDateTime dateTime = new LocalDateTime(2018, 1, Integer.parseInt(day), Integer.parseInt(hour), Integer.parseInt(minute));
+                    DateTime converted = convertJodaTimezone(dateTime, fromTimeZone, toTimeZone);
+                    return String.format("%02d:%02d-%s", converted.hourOfDay().get(), converted.minuteOfHour().get(), converted.dayOfWeek().get());
+                }
+                return null;
+            }
+        });
     }
 }
