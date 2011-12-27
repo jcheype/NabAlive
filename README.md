@@ -67,7 +67,7 @@ mkdir public
 rake watch
 ```
 
-#### API
+# API
 
 The violet standard API is still accurate:
 http://nabaztag.forumactif.fr/t4152-violet-api-sending-a-url-to-a-nabaztag-tag
