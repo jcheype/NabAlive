@@ -67,3 +67,20 @@ mkdir public
 rake watch
 ```
 
+#### API
+
+The violet standard API is still accurate:
+[http://nabaztag.forumactif.fr/t4152-violet-api-sending-a-url-to-a-nabaztag-tag]
+
+There is a new way to make API calls as well!
+
+tts sample: (tts is currently only available in french)
+```
+http://www.nabalive.com/tts/:apikey/:voice?text=Bonjour`
+http://www.nabalive.com/tts/ 469aaccd-52b6-4d2a-b2fb-xxxxxxxxxx/FR?text=Bonjour
+```
+
+play mp3:
+```
+http://www.nabaztag.com/nabaztags/:apikey/play?url=http%3A%2F%2Ftest.com%2Ftest.mp3
+``
