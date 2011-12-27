@@ -32,6 +32,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @Component
 public class LocateController {
     private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final String XMPP_PORT = System.getProperty("xmpp.port");
 
     @Autowired
     private SimpleRestHandler restHandler;
@@ -55,7 +56,10 @@ public class LocateController {
                             StringBuilder sb = new StringBuilder();
                             sb.append("ping " + domain + "\n");
                             sb.append("broad " + domain + "\n");
-                            sb.append("xmpp_domain " + domain + "\n");
+                            if(XMPP_PORT != null)
+                                sb.append("xmpp_domain " + domain + ":"+ XMPP_PORT +"\n");
+                            else
+                                sb.append("xmpp_domain " + domain + "\n");
                             response.write(sb.toString());
                         } else {
                             response.write(new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR));
