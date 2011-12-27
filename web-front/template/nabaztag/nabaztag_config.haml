@@ -1,7 +1,26 @@
 .configPanel
+    .configItem.timeZone
+        %h3 TimeZone
+        .clearfix
+            %label(for='timeZone') TimeZone:
+            %select.timeZone(name="timeZone" value="#{timeZone}")
+        %button.btn.primary.save  Set TimeZone
+        
+    .configItem.days
+        .clearfix
+           %table.condensed-table
+               %thead
+                   %tr
+                       %th
+                       %th WakeUp
+                       %th Sleep
+        %button.btn.primary.save  Save
+        
+.configPanel
     .configItem.tags
+        %h3 Tags (nanoz et stampz)
         :each tag in tags
-            .clearfix
+            .clearfix.tag
                 %label(for="#{tag.value}") #{tag.value}
                 %input(name="#{tag.value}" value="#{tag.name}")
                 %a.small.btn.label.danger X

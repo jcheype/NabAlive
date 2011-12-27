@@ -3,8 +3,11 @@
          %input.apikey(type="hidden" name="apikey")
          %input.appName(type="hidden" name="appName")
          .clearfix
-             %label(for="rfid") Name:
+             %label(for="name") Name:
              %input.name(type="text" name="name")
     .actions
         %button.btn.cancel Cancel
         %button.btn.primary.save Save
+        
+    %ul
+        %li Les stampz/nanoz sélectionnés pour cette application doivent apparaitre en surbrillance
