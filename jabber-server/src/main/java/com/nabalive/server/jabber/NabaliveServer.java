@@ -29,6 +29,7 @@ import static org.jboss.netty.channel.Channels.pipeline;
 
 @Component("nabaliveServer")
 public class NabaliveServer {
+    private final int XMPP_PORT = Integer.parseInt(System.getProperty("xmpp.port", "5222"));
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final Timer timer = new HashedWheelTimer();
 
@@ -58,7 +59,7 @@ public class NabaliveServer {
 
         bootstrap.setOption("reuseAddress", true);
         // Bind and start to accept incoming connections.
-        bind = bootstrap.bind(new InetSocketAddress(5222));
+        bind = bootstrap.bind(new InetSocketAddress(XMPP_PORT));
 
     }
 
