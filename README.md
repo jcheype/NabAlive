@@ -77,8 +77,8 @@ There is a new way to make API calls as well!
 tts sample: (tts is currently only available in french)
 
 ```
-http://www.nabalive.com/tts/:apikey/:voice?text=Bonjour
-http://www.nabalive.com/tts/ 469aaccd-52b6-4d2a-b2fb-xxxxxxxxxx/FR?text=Bonjour
+http://www.nabaztag.com/nabaztags/:apikey/tts/fr?text=Bonjour
+http://www.nabaztag.com/nabaztags/469aaccd-52b6-4d2a-b2fb-xxxxxxxxxx/tts/fr?text=Bonjour
 ```
 
 play mp3:
