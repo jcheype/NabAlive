@@ -1,5 +1,6 @@
 package com.nabalive.server.web.controller;
 
+import com.google.common.collect.ImmutableList;
 import com.nabalive.application.core.Application;
 import com.nabalive.application.core.ApplicationManager;
 import com.nabalive.common.server.MessageService;
@@ -20,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.concurrent.Immutable;
 import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -81,6 +83,8 @@ public class RfidController {
                                 if (applicationConfig.getTags().contains(tagValue)) {
                                     String apikey = applicationConfig.getApplicationStoreApikey();
                                     Application application = applicationManager.getApplication(apikey);
+
+                                    applicationConfig.getParameters().put("__RFID__", (new ImmutableList.Builder<String>()).add(tagValue).build());
                                     application.onStartup(nabaztag, applicationConfig);
                                     response.write("ok");
                                     return;
