@@ -41,10 +41,11 @@ public class CallUrlApplication extends ApplicationBase {
     @Autowired
     private MessageService messageService;
 
-    private void doGet(String url) throws IOException {
+    private void doGet(final Nabaztag nabaztag, String url) throws IOException {
         asyncHttpClient.prepareGet(url).execute(new AsyncCompletionHandler() {
             @Override
             public Object onCompleted(Response response) throws Exception {
+                messageService.sendMessage(nabaztag.getMacAddress(), response.toString());
                 return response;
             }
         });
@@ -58,18 +59,28 @@ public class CallUrlApplication extends ApplicationBase {
         String method = applicationConfig.getParameters().get("method").get(0);
         String parameters = applicationConfig.getParameters().get("parameters").get(0);
 
+        parameters = parameters.replaceAll("\\$\\{object\\.name}", nabaztag.getName());
+
+        if(applicationConfig.getParameters().containsKey("__RFID__")){
+            String rfid = applicationConfig.getParameters().get("__RFID__").get(0);
+            parameters = parameters.replaceAll("\\$\\{ztamp\\.id\\}", rfid);
+        }
+
         if("GET".equalsIgnoreCase(method)){
-            doGet(urlToCall+"?"+parameters);
+            doGet( nabaztag, urlToCall+"?"+parameters);
         }
         else if( "POST".equalsIgnoreCase(method)){
-            doPost(urlToCall, parameters);
+            doPost( nabaztag, urlToCall, parameters);
         }
     }
 
-    private void doPost(String urlToCall, String parameters) throws IOException {
+    private void doPost(final Nabaztag nabaztag, String urlToCall, String parameters) throws IOException {
         asyncHttpClient.preparePost(urlToCall).setBody(parameters).execute(new AsyncCompletionHandler() {
             @Override
             public Object onCompleted(Response response) throws Exception {
+                String responseBody = response.getResponseBody();
+                if(!responseBody.isEmpty())
+                    messageService.sendMessage(nabaztag.getMacAddress(), responseBody);
                 return response;
             }
         });
