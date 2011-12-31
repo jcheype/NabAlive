@@ -46,7 +46,7 @@ public class CallUrlApplication extends ApplicationBase {
             @Override
             public Object onCompleted(Response response) throws Exception {
                 String responseBody = response.getResponseBody();
-                logger.debug("responseBody",  responseBody);
+                logger.debug("responseBody {}",  responseBody);
                 if(!responseBody.isEmpty())
                     messageService.sendMessage(nabaztag.getMacAddress(), responseBody);
                 return response;
@@ -82,7 +82,7 @@ public class CallUrlApplication extends ApplicationBase {
             @Override
             public Object onCompleted(Response response) throws Exception {
                 String responseBody = response.getResponseBody();
-                logger.debug("responseBody",  responseBody);
+                logger.debug("responseBody {}",  responseBody);
                 if(!responseBody.isEmpty())
                     messageService.sendMessage(nabaztag.getMacAddress(), responseBody);
                 return response;
