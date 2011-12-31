@@ -1,0 +1,32 @@
+; trame=18
+; essai
+
+	clr	r4
+	ld	r10,10
+@st	ld	r0,0
+	ld	r1,255
+	palette	r0,r1
+
+	ld	r5,5
+	led	r4,r5
+	
+	dec	r4
+	bge	@b1
+	ld	r4,4
+	dec	r10
+	bne	@b1
+	ld	r0,0
+	ld	r1,2
+	send	r0,r1
+@b1
+	ld	r0,6
+	ld	r1,255
+	palette	r0,r1
+
+	ld	r5,2
+	led	r4,r5
+	
+	wait	4
+	bra	@st
+
+	end

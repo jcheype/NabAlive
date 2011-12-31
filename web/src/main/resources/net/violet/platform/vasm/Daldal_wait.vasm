@@ -1,0 +1,1187 @@
+; trame=45
+; messager nabaztag
+; v0.1 - Sylvain Huet
+; sources : info_type_1, info_val_1,... info_type_8, info_val_8, ear_left, ear_right, colormsg_1,colormsg_2,0
+;     x   x   x   x   x   x   x   x   x   x x x x x x x x   
+; src=010300020000000004030503060d030c03000000000&
+
+	ld	r0,0
+	ld	r5,0
+	bsr	@screen
+	wait	2
+	bra	@o
+
+midi_vol	equ	255
+adp_vol	equ	210
+
+
+gBlueCharte	equ	16
+gRoseCharte	equ	17
+gVertCharte	equ	18
+gOrangeCharte	equ	19
+gJauneCharte	equ	20
+
+/humcount	rmb	1
+/humE		rmb	1
+/humD		rmb	1
+/humC		rmb	1
+/humWl		rmb	1
+/humWh		rmb	1
+/humTl		rmb	1
+/humTh		rmb	1
+/humM		rmb	1
+
+/humleds	rmb	20
+/humcol1	rmb	3
+/humcol2	rmb	3
+
+_humW		equ	0
+_humM		equ	5
+_humTl		equ	10
+_humTh		equ	15
+
+
+/srvcol	rmb	5
+/srvpch		rmb	1
+/srvpcl		rmb	1
+/srvcount	rmb	1
+/srvpch0	rmb	1
+/srvpcl0	rmb	1
+
+SRV_WAIT	equ	10
+SRV_LED0	equ	0
+SRV_LED1	equ	1
+SRV_LED2	equ	2
+SRV_LED3	equ	3
+SRV_LED4	equ	4
+SRV_END		equ	20
+black	equ	0
+yellow	equ	3
+cyan	equ	6
+orange	equ	15
+red	equ	1
+white	equ	7
+mauve	equ	5
+
+
+
+/leds	rmb	15
+
+/state		rmb	1	; 0=humeur, 1=service
+/fade		rmb	1	; 0->255
+/info		rmb	1	; index src
+/statet0	rmb	1	; prochaine heure (sec) de changement
+_humeur_len	equ	30
+_service_len	equ	30
+_humeur_change	equ	3
+_fade_inc	equ	10
+
+/signaux	rmb	1
+
+
+@stateinit	ld	r0,0
+		str	r0,/state
+		str	r0,/info
+		sec	r1,r0
+		str	r0,/statet0
+		rts
+
+@stateupdate	sec	r1,r0
+		ldr	r1,/statet0
+		sub	r1,r0
+		cmp	r1,0
+		ble	@stateupdate1
+		ldr	r0,/fade
+		cmp	r0,240
+		bhi	@stateupdate0
+		add	r0,_fade_inc
+		str	r0,/fade
+		rts
+@stateupdate0	ld	r0,255
+		str	r0,/fade
+		rts
+		
+@stateupdate1	ldr	r0,/state
+		bne	@stateupdatehumeur
+		ldr	r3,/info
+@stateupdate1a	src	r0,r3
+		beq	@stateupdate1b
+		cmp	r0,10
+		blo	@stateupdate2			
+@stateupdate1b	cmp	r3,0
+		beq	@stateupdatehumeur
+		clr	r3
+		str	r3,/info
+		bra	@stateupdate1a
+@stateupdate2	inc	r3
+		src	r1,r3
+		inc	r3
+		str	r3,/info
+		dec	r0
+		bsr	@srvinit
+		ld	r0,1
+		str	r0,/fade
+		str	r0,/state
+		sec	r1,r0
+		add	r0,_service_len
+		str	r0,/statet0
+		rts
+@stateupdatehumeur
+		ld	r0,1
+		str	r0,/fade
+		clr	r0
+		str	r0,/state
+		sec	r1,r0
+		add	r0,_humeur_len
+		str	r0,/statet0
+		ldr	r0,/humcount
+		ble	@stateupdate3
+		dec	r0
+		str	r0,/humcount
+		rts
+@stateupdate3	bsr	@humeurinit
+		ld	r0,_humeur_change
+		str	r0,/humcount
+		rts
+
+@statedisplay	
+		sec	r1,r0
+		bsr	@ledsbegin
+		sec	r1,r0
+		
+;		ld	r9,255
+;		bsr	@humeurplay
+;		bra	@statedisplay2
+		
+		bsr	@stateupdate
+	
+		ldr	r0,/state
+		beq	@statedisplay1
+		ldr	r9,/fade	; service au premier plan
+;		echo r9
+		bsr	@srvplay
+		ldr	r0,/fade
+		ld	r9,255
+		sub	r9,r0
+		bsr	@humeurplay
+		bra	@statedisplay2
+@statedisplay1	ldr	r9,/fade	; humeur au premier plan
+;		echo r9
+		bsr	@humeurplay
+		ldr	r0,/fade
+		ld	r9,255
+		sub	r9,r0
+		bsr	@srvplay
+@statedisplay2
+		sec	r1,r0
+		bsr	@signals
+		sec	r1,r0
+		bsr	@ledsend
+		sec	r1,r0
+		rts
+
+@signals	ldr	r0,/signaux
+		inc	r0,
+		str	r0,/signaux
+		
+		and	r0,62
+		cmp	r0,2
+		bne	@sig0
+		
+		ld	r0,18
+		src	r0,r0
+		tst	r0
+		beq	@sig0
+		
+		ld	r0,gRoseCharte
+		bra	@sigall
+
+@sig0		ldr	r0,/signaux
+		and	r0,14
+		cmp	r0,6
+		bne	@sig1
+
+		download	r0
+		and	r0,2
+		beq	@sig1
+		ld	r0,gBlueCharte
+		
+@sigonce	ld	r1,255
+		palette	r0,r1
+		ld	r3,/leds
+		add	r3,6
+		setc	r3
+		bra	@sigend
+		
+@sig1		ldr	r0,/signaux
+		and	r0,124
+		cmp	r0,12
+		beq	@sig2
+		cmp	r0,20
+		bne	@sigend
+@sig2		
+		lastping	r2,r0
+		cmp	r2,1	; >512 secondes
+		bls	@sigend
+		ld	r0,1
+
+@sigall		ld	r1,255
+		palette	r0,r1
+		ld	r3,/leds
+		ld	r4,5
+@sigall0	setc	r3
+		add	r3,3
+		dec	r4
+		bne	@sigall0
+
+@sigend		rts
+
+		
+
+
+;initialisation d'un service r0=service id, r1=val
+@srvinit	echo	r0
+		echo	r1
+		ldt	r5,r0,@infooffset
+		add	r5,r1
+		ldt	r5,r5,@inforedirect
+		ldt	r0,r5,@infotbstarth
+		str	r0,/srvpch0
+		str	r0,/srvpch
+		ldt	r0,r5,@infotbstartl
+		str	r0,/srvpcl0
+		str	r0,/srvpcl
+		clr	r0
+		str	r0,/srvcount
+		ld	r1,/srvcol
+		str	r0,r1
+		str	r0,1,r1
+		str	r0,2,r1
+		str	r0,3,r1
+		str	r0,4,r1
+		rts
+		
+@srvrun		ldr	r0,/srvcount
+		beq	@srvrun1
+		dec	r0
+		str	r0,/srvcount
+		rts
+@srvrun1	ldr	r3,/srvpch
+		ldr	r4,/srvpcl
+		ldtw	r0,@infosdata
+		incw	r3,r4
+		str	r3,/srvpch
+		str	r4,/srvpcl
+		cmp	r0,SRV_END
+		bne	@srvrun1b
+		ldr	r1,/srvpch0
+		str	r1,/srvpch
+		ldr	r1,/srvpcl0
+		str	r1,/srvpcl
+		bra	@srvrun1
+@srvrun1b	cmp	r0,SRV_WAIT
+		bne	@srvrun2
+		ldtw	r0,@infosdata
+		incw	r3,r4
+		str	r3,/srvpch
+		str	r4,/srvpcl
+		str	r0,/srvcount
+		bra	@srvrun
+@srvrun2	cmp	r0,5
+		blo	@srvrun3
+		clr	r0
+@srvrun3	ldtw	r2,@infosdata
+		incw	r3,r4
+		str	r3,/srvpch
+		str	r4,/srvpcl
+		str	r2,/srvcol,r0
+		bra	@srvrun1
+
+;jeu d'un service r9=amplitude globale
+@srvplay	cmp	r9,0
+		beq	@srvplayend
+		
+		bsr	@srvrun
+		
+		ld	r8,/srvcol
+		ld	r10,/leds
+		ld	r7,5
+@srvplay1	ldr	r0,r8
+		palette	r0,r9
+		fade	r9
+		addc	r10
+		
+		add	r10,3
+		inc	r8
+		dec	r7
+		bne	@srvplay1
+@srvplayend	rts
+
+
+;initialisation des leds
+@ledsbegin	ld	r3,/leds
+		clr	r0
+		clr	r1
+		clr	r2
+		ld	r4,5
+@ledsbegin1	setc	r3
+		add	r3,3
+		dec	r4
+		bne	@ledsbegin1
+		rts
+
+
+; incremente ou decremente la ram r2
+@deltachar	
+		ldr	r0,r2
+		bsr	@deltac
+		str	r0,r2
+		rts
+
+; incremente ou decremente r0
+@deltac	
+		rnd	r1
+		and	r1,3
+		cmp	r1,0
+		bne	@deltac1
+		cmp	r0,0
+		beq	@deltacend
+		dec	r0
+		bra	@deltacend
+@deltac1	cmp	r1,3
+		bne	@deltacend
+		cmp	r0,255
+		beq	@deltacend
+		inc	r0
+@deltacend
+		rts
+		
+@humeurinit
+		rnd	r4
+		ld	r2,7
+		fade	r4,r2
+		inc	r4
+		ld	r1,255
+		palette	r4,r1
+		ld	r3,/humcol1
+		setc	r3
+		
+		
+@humeurinit0
+		rnd	r0
+		ld	r2,7
+		fade	r0,r2
+		inc	r0
+		cmp	r0,r4
+		beq	@humeurinit0
+
+		ld	r1,255
+		palette	r0,r1
+		ld	r3,/humcol2
+		setc	r3
+
+		rnd	r0
+		str	r0,/humE
+		echo	r0
+		rnd	r0
+		str	r0,/humD
+		echo	r0
+		rnd	r0
+;		ld	r0,20
+		str	r0,/humC
+		echo	r0
+
+		bsr	@humeurmstinit
+		ld	r8,/humleds
+		ld	r7,5
+@humeurinit1	rnd	r0
+		str	r0,_humW,r8
+		rnd	r0
+		str	r0,_humM,r8
+		rnd	r0
+		str	r0,_humTl,r8
+		rnd	r0
+		str	r0,_humTh,r8
+		inc	r8
+		dec	r7
+		bne	@humeurinit1
+		
+	
+		rts
+		
+@humeurmstinit
+		ldr	r0,/humE
+		or	r0,4
+		ld	r1,32	; TODO : regler la periode globale
+		mulw	r0,r1
+		str	r1,/humWl
+		str	r0,/humWh
+		ldr	r0,/humD
+		ld	r1,3
+		lsr	r0,r1
+		str	r0,/humM
+		rts
+
+
+@humeurplaymst
+		ld	r2,/humE
+		bsr	@deltachar
+		ld	r2,/humD
+		bsr	@deltachar
+		ld	r2,/humC
+		bsr	@deltachar
+		bsr	@humeurmstinit
+		
+		
+		clrcc
+		ldr	r0,/humTl
+		ldr	r1,/humWl
+		addcc	r0,r1
+		str	r0,/humTl
+		ldr	r0,/humTh
+		ldr	r1,/humWh
+		addcc	r0,r1
+		str	r0,/humTh
+		
+		rts
+		
+@humeurcoh	
+		ldr	r10,/humC	; calcul r10=1-Cp
+;	echo	r10
+		cmp	r10,128
+		blo	@humeurcoh1
+		sub	r10,128
+		add	r10,r10
+		bra	@humeurcoh2
+@humeurcoh1	clr	r10
+@humeurcoh2	ldr	r11,/humC	; calcul r11=1-Cphi
+		cmp	r11,64
+		blo	@humeurcoh3
+		ld	r11,255
+		bra	@humeurcoh4
+@humeurcoh3	add	r11,r11
+		add	r11,r11
+@humeurcoh4	
+;		echo	r11
+		rts
+
+
+; r9 contient le fade general
+@humeurplayleds	
+		ld	r13,/leds
+		
+		ldr	r6,/humTh	; conserve T du master
+		ld	r5,128
+		ldr	r0,/humM
+		
+		ld	r1,1
+		lsr	r0,r1
+		sub	r5,r0		; conserve 1/2-M du master
+		ldr	r12,/humM	; conserver M du master
+		bsr	@humeurcoh
+		
+		ld	r8,/humleds
+		ld	r7,5
+@humleds1	
+		ldr	r0,_humW,r8
+		bsr	@deltac
+		str	r0,_humW,r8
+
+		ldr	r0,_humM,r8
+		bsr	@deltac
+		str	r0,_humM,r8
+		
+		
+		ldr	r2,_humW,r8
+		fade	r2,r10
+		
+		ldr	r0,/humWl
+		ldr	r1,/humWh
+		fade	r0,r2
+		mulw	r1,r2
+		clrcc
+		addcc	r0,r2
+		clr	r2
+		addcc	r1,r2	; on a calcule Wi*W*(1-Cp) dans r0(l),r1(h)
+
+		ldr	r2,_humTl,r8
+		ldr	r3,_humTh,r8
+		clrcc
+		addcc	r0,r2
+		addcc	r1,r3	; on a calcule Ti+Wi*W*(1-Cp) dans r0(l),r1(h)
+
+		ld	r2,r11
+		fade	r0,r2
+		mulw	r1,r2
+		clrcc
+		addcc	r0,r2
+		clr	r2
+		addcc	r1,r2	; on a calcule (1-Cphi)*(Ti+Wi*W*(1-Cp)) dans r0(l),r1(h)
+		
+		str	r0,_humTl,r8
+		str	r1,_humTh,r8
+		
+		
+		
+		ld	r3,r5	; (1/2-M)
+		ldr	r0,_humM,r8
+		fade	r3,r0	; * Mi
+		ldr	r0,/humC
+		fade	r3,r0	; * (1-C)
+		add	r3,r12	; + M	: on a calcule M+(1-C)*Mi*(1/2-M) dans r3
+		
+		ldr	r4,_humTh,r8
+		add	r4,r6	; ajouter master
+		osc	r4,r4
+		ld	r0,255
+		ld	r1,r3
+		add	r1,r1
+		sub	r0,r1
+		fade	r4,r0
+		add	r4,r3
+		ld	r0,/humcol1
+		ldc	r0
+;		echo	r4
+		fade	r4
+		fade	r9
+		addc	r13
+
+		ldr	r4,_humTh,r8
+		add	r4,r6	; ajouter master
+		add	r4,128
+		osc	r4,r4
+		ld	r0,255
+		ld	r1,r3
+		add	r1,r1
+		sub	r0,r1
+		fade	r4,r0
+		add	r4,r3
+		ld	r0,/humcol2
+		ldc	r0
+;		echo	r4
+		fade	r4
+		fade	r9
+		addc	r13
+		
+		add	r13,3
+		inc	r8
+		dec	r7
+		bne	@humleds1
+		rts
+
+@humeurplay	cmp	r9,0
+		beq	@humend
+		ldr	r0,/humcount
+		blt	@humend
+		sec	r1,r0
+		
+		bsr	@humeurplaymst
+		sec	r1,r0
+		bsr	@humeurplayleds
+@humend		rts
+
+		
+/thumeur	rmb	1
+
+@humeurplayx	cmp	r9,0
+		beq	@humplayend
+		ld	r3,/leds
+		ld	r4,5
+@humeurplay1	ld	r0,5
+		ldr	r1,/thumeur
+		add	r1,50
+		str	r1,/thumeur
+		osc	r1,r1
+		palette	r0,r1
+		fade	r9
+		addc	r3
+		
+		add	r3,3
+		dec	r4
+		bne	@humeurplay1
+@humplayend	rts
+
+		
+
+;affichage des leds
+@ledsend	ld	r8,/leds
+		clr	r3
+		clr	r4
+@ledsend1	ldc	r8
+		led	r3,r4
+		add	r8,3
+		inc	r3
+		cmp	r3,5
+		blt	@ledsend1
+		rts
+
+
+
+/itf_comp file interf_compris.mid
+/itf_efface file interf_efface.mid
+/itf_noprev file interf_nomessavant.mid
+/itf_prev file interf_precedent.mid
+/itf_stop file interf_stop.mid
+
+
+; reglage du volume
+	
+@o	
+	clr	r15
+	bsr	@musicstop
+	
+	ld	r0,2
+	input	r0,@vol	;interruption bouton3
+	int	r0
+
+	ld	r0,255	; ouverture du volume
+	vol	r0
+
+	ld	r0,0
+	input	r0,@clicm	; interruption clic
+
+	wait 1
+	
+	ld	r0,255
+	str	r0,/humcount
+	
+	bsr	@stateinit
+;	bsr	@humeurinit
+	
+;	ld	r0,4
+;	ld	r1,2
+;	bsr	@srvinit
+
+@o1	wait	1
+	bsr	@statedisplay
+	bra	@o1
+	
+	
+
+@clicwait
+	bsr	@musicstop
+	ld	r0,0
+	ld	r1,3
+        send    r0,r1 
+	bra	@sendwaitloop
+
+@dclicnone
+	ld	r0,18
+	src	r0,r0
+	tst	r0
+	bne	@arch
+	pull    255,255
+        rti
+
+@clicnone
+        ld      r0,18
+        src     r0,r0
+        tst     r0
+        bne     @clicwait
+ 	pull	255,255
+	rti
+@lclicnone
+	bra	@reread
+
+@arch
+        bsr     @musicstop
+        wait    10
+	ld      r0,/itf_efface
+        bsr     @playmid
+	ld	r0,0
+	ld	r1,1
+        send    r0,r1 
+	bsr     @sendwait
+        rtij    @o
+
+@reread
+        bsr     @musicstop
+        wait    10
+        ld      r0,/itf_prev
+        bsr     @playmid
+	ld	r0,0
+	ld	r1,4
+        send    r0,r1 
+	bsr	@sendwait
+        ld      r0,/itf_noprev
+        bsr     @playmid
+	rtij	@o
+
+@sendwaitloop
+        ld      r0,0
+	inputrst	r0
+	bsr	@sendwait
+	bra	@sendwaitloop
+
+@sendwait
+	clr	r0
+	palette	r0,r0
+	ld	r3,2
+	ld	r4,20
+	led	r3,r4
+@sendw1	wait	1
+	
+	ld	r5,6
+	osc	r1,r10
+	palette	r5,r1
+	ld	r3,0
+	ld	r4,0
+	led	r3,r4
+
+	add	r10,40
+	osc	r1,r10
+	palette	r5,r1
+	ld	r3,1
+	led	r3,r4
+	
+	add	r10,40
+	osc	r1,r10
+	palette	r5,r1
+	ld	r3,4
+	led	r3,r4
+
+	add	r10,40
+	osc	r1,r10
+	palette	r5,r1
+	ld	r3,3
+	led	r3,r4
+
+	add	r10,152
+
+	sendready	r0
+	dec	r0
+	bne	@sendw1
+	download	r1
+	and	r1,6
+	bne	@sendw1
+
+	rts
+	
+
+
+
+; affichage plein ecran : couleur r0, duree r5
+; touche à r0,r1,r2,r4
+@screen	ld	r1,255
+	palette	r0,r1
+	ld	r4,4
+@s1	led	r4,r5
+	dec	r4
+	bge	@s1
+	rts
+
+
+
+@musicstop
+	midistop
+	wavstop
+	rts
+	
+@vol	push	1,0
+	but3	r8
+	ldt	r8,r8,@voldat
+;	ld	r8,80
+	mvol	r8
+	pull	1,0
+	rti
+
+@voldat	fcb	0,160,200
+
+; affichage des leds pour feedback clic
+@clicled	
+	ld	r1,255
+	palette	r0,r1
+	ld	r3,4
+	ld	r4,0
+@clicl0	led	r3,r4
+	dec	r3
+	bge	@clicl0
+	rts
+	
+@clicm	push	255,255
+	
+;	stopnet
+	
+	ld	r0,0
+	inputrst	r0	; inhibition de l'interruption de clic
+	ld	r0,5
+	bsr	@clicled
+	clr	r5
+@clicm1	wait	1
+	inc	r5
+	ld	r0,40
+	cmp	r5,r0
+	blt	@clicm3
+	ld	r0,1
+	bsr	@clicled
+@clicm2	wait	1
+	pushbutton	r0
+	tst	r0
+	bne	@clicm2
+	ld	r0,2
+	bra	@clicm6
+@clicm3	pushbutton	r0
+	tst	r0
+	bne	@clicm1
+
+	ld	r5,12
+@clicm4	wait	1
+	dec	r5
+	beq	@clicm5
+	pushbutton	r0
+	tst	r0
+	beq	@clicm4
+	ld	r0,1
+	bra	@clicm6
+@clicm5	ld	r0,0
+@clicm6	ld	r1,r0
+	ld	r0,0
+	input	r0,@clicm	; interruption clic
+	brat	r1,@tbclics
+@tbclics
+	fdb	@clicnone,@dclicnone,@lclicnone
+
+@playmid
+	bsr	@musicstop
+	ld	r1,midi_vol
+	vol	r1
+	midiplay	r0
+@playmid0
+        wait    1
+        music   r0
+        tst     r0
+        bne     @playmid0
+	rts
+	
+@infooffset	fcb	0,6,13,0,0,20,24
+@inforedirect	fcb	0,1,2,3,4,5
+		fcb	6,7,8,9,10,11,12
+		fcb	13,14,15,16,17,18,19
+		fcb	20,21,22,23
+		fcb	24,24,24,25,25,25,25,26,26,26,26
+		
+@infotbstartl	fcb	0
+ fcb 39,78,243,134,173,92
+ fcb 203,34,97,136,199,30,141
+ fcb 174,233,40,103,166,221,20
+ fcb 59,98,161,248
+ fcb 31,162,27
+ 
+@infotbstarth	fcb	0
+ fcb 0,0,0,1,1,2
+ fcb 2,3,3,3,3,4,4
+ fcb 4,4,5,5,5,5,6
+ fcb 6,6,6,6
+ fcb 7,7,8
+ 
+@infosdata
+ fcb SRV_WAIT,0,SRV_LED0,yellow,SRV_LED1,yellow,SRV_LED2,yellow,SRV_LED3,yellow,SRV_LED4,yellow
+ fcb SRV_WAIT,40,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,10,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,0,SRV_END
+ fcb SRV_WAIT,0,SRV_LED0,cyan,SRV_LED1,cyan,SRV_LED2,cyan,SRV_LED3,cyan,SRV_LED4,cyan
+ fcb SRV_WAIT,40,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,9,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,0,SRV_END
+ fcb SRV_WAIT,0,SRV_LED0,cyan,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,2,SRV_LED0,black,SRV_LED3,cyan
+ fcb SRV_WAIT,2,SRV_LED3,black
+ fcb SRV_WAIT,8,SRV_LED2,cyan
+ fcb SRV_WAIT,2,SRV_LED1,cyan,SRV_LED2,black
+ fcb SRV_WAIT,2,SRV_LED1,black
+ fcb SRV_WAIT,9,SRV_LED4,cyan
+ fcb SRV_WAIT,2,SRV_LED4,black
+ fcb SRV_WAIT,1,SRV_LED1,cyan
+ fcb SRV_WAIT,2,SRV_LED1,black
+ fcb SRV_WAIT,8,SRV_LED3,cyan
+ fcb SRV_WAIT,2,SRV_LED1,cyan,SRV_LED3,black
+ fcb SRV_WAIT,2,SRV_LED0,cyan
+ fcb SRV_WAIT,1,SRV_LED1,black
+ fcb SRV_WAIT,2,SRV_LED0,black
+ fcb SRV_WAIT,1,SRV_LED2,cyan
+ fcb SRV_WAIT,2,SRV_LED2,black
+ fcb SRV_WAIT,8,SRV_LED4,cyan
+ fcb SRV_WAIT,1,SRV_LED0,cyan
+ fcb SRV_WAIT,1,SRV_LED4,black
+ fcb SRV_WAIT,2,SRV_LED0,black
+ fcb SRV_WAIT,11,SRV_LED1,cyan
+ fcb SRV_WAIT,2,SRV_LED1,black
+ fcb SRV_WAIT,1,SRV_LED4,cyan
+ fcb SRV_WAIT,2,SRV_LED2,cyan,SRV_LED4,black
+ fcb SRV_WAIT,2,SRV_LED2,black
+ fcb SRV_WAIT,1,SRV_LED4,cyan
+ fcb SRV_WAIT,1,SRV_LED0,cyan
+ fcb SRV_WAIT,1,SRV_LED2,cyan,SRV_LED4,black
+ fcb SRV_WAIT,1,SRV_LED0,black
+ fcb SRV_WAIT,1,SRV_LED2,black
+ fcb SRV_WAIT,1,SRV_LED3,cyan
+ fcb SRV_WAIT,2,SRV_LED3,black
+ fcb SRV_WAIT,8,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,0,SRV_END
+ fcb SRV_WAIT,0,SRV_LED0,cyan,SRV_LED1,cyan,SRV_LED2,cyan,SRV_LED3,cyan,SRV_LED4,cyan
+ fcb SRV_WAIT,15,SRV_LED0,yellow,SRV_LED1,yellow,SRV_LED2,yellow,SRV_LED3,yellow,SRV_LED4,yellow
+ fcb SRV_WAIT,3,SRV_LED0,cyan,SRV_LED1,cyan,SRV_LED2,cyan,SRV_LED3,cyan,SRV_LED4,cyan
+ fcb SRV_WAIT,17,SRV_LED0,yellow,SRV_LED1,yellow,SRV_LED2,yellow,SRV_LED3,yellow,SRV_LED4,yellow
+ fcb SRV_WAIT,6,SRV_LED0,cyan,SRV_LED1,cyan,SRV_LED2,cyan,SRV_LED3,cyan,SRV_LED4,cyan
+ fcb SRV_WAIT,4,SRV_LED0,yellow,SRV_LED1,yellow,SRV_LED2,yellow,SRV_LED3,yellow,SRV_LED4,yellow
+ fcb SRV_WAIT,21,SRV_LED0,cyan,SRV_LED1,cyan,SRV_LED2,cyan,SRV_LED3,cyan,SRV_LED4,cyan
+ fcb SRV_WAIT,28,SRV_LED0,yellow,SRV_LED1,yellow,SRV_LED2,yellow,SRV_LED3,yellow,SRV_LED4,yellow
+ fcb SRV_WAIT,3,SRV_LED0,cyan,SRV_LED1,cyan,SRV_LED2,cyan,SRV_LED3,cyan,SRV_LED4,cyan
+ fcb SRV_WAIT,7,SRV_LED0,yellow,SRV_LED1,yellow,SRV_LED2,yellow,SRV_LED3,yellow,SRV_LED4,yellow
+ fcb SRV_WAIT,26,SRV_LED0,cyan,SRV_LED1,cyan,SRV_LED2,cyan,SRV_LED3,cyan,SRV_LED4,cyan
+ fcb SRV_WAIT,4,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,0,SRV_END
+ fcb SRV_WAIT,0,SRV_LED0,cyan,SRV_LED1,cyan,SRV_LED2,cyan,SRV_LED3,cyan,SRV_LED4,cyan
+ fcb SRV_WAIT,20,SRV_LED0,white,SRV_LED1,white,SRV_LED2,white,SRV_LED3,white,SRV_LED4,white
+ fcb SRV_WAIT,21,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,0,SRV_END
+ fcb SRV_WAIT,0,SRV_LED0,white,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,4,SRV_LED3,white
+ fcb SRV_WAIT,1,SRV_LED0,black
+ fcb SRV_WAIT,4,SRV_LED3,black
+ fcb SRV_WAIT,8,SRV_LED1,white
+ fcb SRV_WAIT,4,SRV_LED4,white
+ fcb SRV_WAIT,1,SRV_LED1,black
+ fcb SRV_WAIT,4,SRV_LED4,black
+ fcb SRV_WAIT,9,SRV_LED0,white
+ fcb SRV_WAIT,4,SRV_LED2,white
+ fcb SRV_WAIT,1,SRV_LED0,black
+ fcb SRV_WAIT,4,SRV_LED2,black
+ fcb SRV_WAIT,4,SRV_LED4,white
+ fcb SRV_WAIT,1,SRV_LED3,white
+ fcb SRV_WAIT,4,SRV_LED4,black
+ fcb SRV_WAIT,1,SRV_LED3,black
+ fcb SRV_WAIT,5,SRV_LED0,white
+ fcb SRV_WAIT,3,SRV_LED2,white
+ fcb SRV_WAIT,2,SRV_LED0,black
+ fcb SRV_WAIT,3,SRV_LED2,black
+ fcb SRV_WAIT,12,SRV_LED4,white
+ fcb SRV_WAIT,3,SRV_LED2,white
+ fcb SRV_WAIT,2,SRV_LED4,black
+ fcb SRV_WAIT,1,SRV_LED3,white
+ fcb SRV_WAIT,2,SRV_LED2,black
+ fcb SRV_WAIT,3,SRV_LED3,black
+ fcb SRV_WAIT,9,SRV_LED0,white
+ fcb SRV_WAIT,4,SRV_LED4,white
+ fcb SRV_WAIT,1,SRV_LED0,black
+ fcb SRV_WAIT,4,SRV_LED4,black
+ fcb SRV_WAIT,7,SRV_LED2,white
+ fcb SRV_WAIT,4,SRV_LED1,white
+ fcb SRV_WAIT,1,SRV_LED2,black
+ fcb SRV_WAIT,4,SRV_LED1,black
+ fcb SRV_WAIT,12,SRV_LED4,white
+ fcb SRV_WAIT,1,SRV_LED1,white
+ fcb SRV_WAIT,4,SRV_LED4,black
+ fcb SRV_WAIT,1,SRV_LED1,black
+ fcb SRV_WAIT,5,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,0,SRV_END
+ fcb SRV_WAIT,0,SRV_LED0,orange,SRV_LED1,orange,SRV_LED2,orange,SRV_LED3,orange,SRV_LED4,orange
+ fcb SRV_WAIT,2,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,2,SRV_LED0,orange,SRV_LED1,orange,SRV_LED2,orange,SRV_LED3,orange,SRV_LED4,orange
+ fcb SRV_WAIT,4,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,4,SRV_LED0,orange,SRV_LED1,orange,SRV_LED2,orange,SRV_LED3,orange,SRV_LED4,orange
+ fcb SRV_WAIT,8,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,8,SRV_LED0,orange,SRV_LED1,orange,SRV_LED2,orange,SRV_LED3,orange,SRV_LED4,orange
+ fcb SRV_WAIT,20,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,17,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,0,SRV_END
+ fcb SRV_WAIT,0,SRV_LED0,orange,SRV_LED1,orange,SRV_LED2,orange,SRV_LED3,orange,SRV_LED4,orange
+ fcb SRV_WAIT,2,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,2,SRV_LED0,orange,SRV_LED1,orange,SRV_LED2,orange,SRV_LED3,orange,SRV_LED4,orange
+ fcb SRV_WAIT,4,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,4,SRV_LED0,orange,SRV_LED1,orange,SRV_LED2,orange,SRV_LED3,orange,SRV_LED4,orange
+ fcb SRV_WAIT,20,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,18,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,0,SRV_END
+ fcb SRV_WAIT,0,SRV_LED0,orange,SRV_LED1,orange,SRV_LED2,orange,SRV_LED3,orange,SRV_LED4,orange
+ fcb SRV_WAIT,2,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,2,SRV_LED0,orange,SRV_LED1,orange,SRV_LED2,orange,SRV_LED3,orange,SRV_LED4,orange
+ fcb SRV_WAIT,20,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,16,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,0,SRV_END
+ fcb SRV_WAIT,0,SRV_LED0,orange,SRV_LED1,black,SRV_LED2,orange,SRV_LED3,black,SRV_LED4,orange
+ fcb SRV_WAIT,20,SRV_LED0,black,SRV_LED1,orange,SRV_LED2,black,SRV_LED3,orange,SRV_LED4,black
+ fcb SRV_WAIT,20,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,0,SRV_END
+ fcb SRV_WAIT,0,SRV_LED0,orange,SRV_LED1,orange,SRV_LED2,orange,SRV_LED3,orange,SRV_LED4,orange
+ fcb SRV_WAIT,7,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,2,SRV_LED0,orange,SRV_LED1,orange,SRV_LED2,orange,SRV_LED3,orange,SRV_LED4,orange
+ fcb SRV_WAIT,2,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,15,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,0,SRV_END
+ fcb SRV_WAIT,0,SRV_LED0,orange,SRV_LED1,orange,SRV_LED2,orange,SRV_LED3,orange,SRV_LED4,orange
+ fcb SRV_WAIT,6,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,3,SRV_LED0,orange,SRV_LED1,orange,SRV_LED2,orange,SRV_LED3,orange,SRV_LED4,orange
+ fcb SRV_WAIT,2,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,2,SRV_LED0,orange,SRV_LED1,orange,SRV_LED2,orange,SRV_LED3,orange,SRV_LED4,orange
+ fcb SRV_WAIT,2,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,15,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,0,SRV_END
+ fcb SRV_WAIT,0,SRV_LED0,orange,SRV_LED1,orange,SRV_LED2,orange,SRV_LED3,orange,SRV_LED4,orange
+ fcb SRV_WAIT,2,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,2,SRV_LED0,orange,SRV_LED1,orange,SRV_LED2,orange,SRV_LED3,orange,SRV_LED4,orange
+ fcb SRV_WAIT,2,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,2,SRV_LED0,orange,SRV_LED1,orange,SRV_LED2,orange,SRV_LED3,orange,SRV_LED4,orange
+ fcb SRV_WAIT,2,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,2,SRV_LED0,orange,SRV_LED1,orange,SRV_LED2,orange,SRV_LED3,orange,SRV_LED4,orange
+ fcb SRV_WAIT,2,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,22,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,0,SRV_END
+ fcb SRV_WAIT,0,SRV_LED0,red,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,red
+ fcb SRV_WAIT,46,SRV_LED0,black,SRV_LED4,black
+ fcb SRV_WAIT,4,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,0,SRV_END
+ fcb SRV_WAIT,0,SRV_LED0,red,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,25,SRV_LED2,red
+ fcb SRV_WAIT,11,SRV_LED0,black
+ fcb SRV_WAIT,14,SRV_LED4,red
+ fcb SRV_WAIT,11,SRV_LED2,black
+ fcb SRV_WAIT,14,SRV_LED0,red
+ fcb SRV_WAIT,11,SRV_LED4,black
+ fcb SRV_WAIT,13,SRV_LED3,red
+ fcb SRV_WAIT,12,SRV_LED0,black
+ fcb SRV_WAIT,24,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,0,SRV_END
+ fcb SRV_WAIT,0,SRV_LED0,red,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,15,SRV_LED2,red
+ fcb SRV_WAIT,5,SRV_LED0,black
+ fcb SRV_WAIT,10,SRV_LED4,red
+ fcb SRV_WAIT,5,SRV_LED2,black
+ fcb SRV_WAIT,10,SRV_LED1,red
+ fcb SRV_WAIT,5,SRV_LED4,black
+ fcb SRV_WAIT,10,SRV_LED3,red
+ fcb SRV_WAIT,5,SRV_LED1,black
+ fcb SRV_WAIT,10,SRV_LED0,red
+ fcb SRV_WAIT,5,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,0,SRV_END
+ fcb SRV_WAIT,0,SRV_LED0,red,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,7,SRV_LED2,red
+ fcb SRV_WAIT,3,SRV_LED0,black
+ fcb SRV_WAIT,4,SRV_LED4,red
+ fcb SRV_WAIT,3,SRV_LED2,black
+ fcb SRV_WAIT,4,SRV_LED1,red
+ fcb SRV_WAIT,3,SRV_LED4,black
+ fcb SRV_WAIT,4,SRV_LED3,red
+ fcb SRV_WAIT,3,SRV_LED1,black
+ fcb SRV_WAIT,4,SRV_LED0,red
+ fcb SRV_WAIT,3,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,0,SRV_END
+ fcb SRV_WAIT,0,SRV_LED0,red,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,4,SRV_LED2,red
+ fcb SRV_WAIT,2,SRV_LED0,black
+ fcb SRV_WAIT,2,SRV_LED4,red
+ fcb SRV_WAIT,2,SRV_LED2,black
+ fcb SRV_WAIT,2,SRV_LED1,red
+ fcb SRV_WAIT,2,SRV_LED4,black
+ fcb SRV_WAIT,2,SRV_LED3,red
+ fcb SRV_WAIT,2,SRV_LED1,black
+ fcb SRV_WAIT,2,SRV_LED0,red
+ fcb SRV_WAIT,2,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,0,SRV_END
+ fcb SRV_WAIT,0,SRV_LED0,red,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,2,SRV_LED2,red
+ fcb SRV_WAIT,2,SRV_LED0,black,SRV_LED4,red
+ fcb SRV_WAIT,2,SRV_LED1,red,SRV_LED2,black
+ fcb SRV_WAIT,2,SRV_LED3,red,SRV_LED4,black
+ fcb SRV_WAIT,2,SRV_LED0,red,SRV_LED1,black
+ fcb SRV_WAIT,2,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,0,SRV_END
+ fcb SRV_WAIT,0,SRV_LED0,red,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,1,SRV_LED2,red
+ fcb SRV_WAIT,1,SRV_LED0,black,SRV_LED4,red
+ fcb SRV_WAIT,1,SRV_LED1,red,SRV_LED2,black
+ fcb SRV_WAIT,1,SRV_LED3,red,SRV_LED4,black
+ fcb SRV_WAIT,1,SRV_LED0,red,SRV_LED1,black
+ fcb SRV_WAIT,1,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,0,SRV_END
+ fcb SRV_WAIT,0,SRV_LED0,white,SRV_LED1,white,SRV_LED2,white,SRV_LED3,white,SRV_LED4,white
+ fcb SRV_WAIT,36,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,2,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,0,SRV_END
+ fcb SRV_WAIT,0,SRV_LED0,white,SRV_LED1,white,SRV_LED2,white,SRV_LED3,white,SRV_LED4,white
+ fcb SRV_WAIT,5,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,16,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,0,SRV_END
+ fcb SRV_WAIT,0,SRV_LED0,white,SRV_LED1,white,SRV_LED2,white,SRV_LED3,white,SRV_LED4,white
+ fcb SRV_WAIT,5,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,5,SRV_LED0,white,SRV_LED1,white,SRV_LED2,white,SRV_LED3,white,SRV_LED4,white
+ fcb SRV_WAIT,5,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,16,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,0,SRV_END
+ fcb SRV_WAIT,0,SRV_LED0,white,SRV_LED1,white,SRV_LED2,white,SRV_LED3,white,SRV_LED4,white
+ fcb SRV_WAIT,5,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,5,SRV_LED0,white,SRV_LED1,white,SRV_LED2,white,SRV_LED3,white,SRV_LED4,white
+ fcb SRV_WAIT,5,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,5,SRV_LED0,white,SRV_LED1,white,SRV_LED2,white,SRV_LED3,white,SRV_LED4,white
+ fcb SRV_WAIT,5,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,15,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,0,SRV_END
+ fcb SRV_WAIT,0,SRV_LED0,mauve,SRV_LED1,mauve,SRV_LED2,mauve,SRV_LED3,mauve,SRV_LED4,mauve
+ fcb SRV_WAIT,45,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,10,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,0,SRV_END
+ fcb SRV_WAIT,0,SRV_LED0,mauve,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,5,SRV_LED1,mauve
+ fcb SRV_WAIT,5,SRV_LED3,mauve
+ fcb SRV_WAIT,1,SRV_LED0,black
+ fcb SRV_WAIT,4,SRV_LED4,mauve
+ fcb SRV_WAIT,1,SRV_LED1,black
+ fcb SRV_WAIT,4,SRV_LED1,mauve
+ fcb SRV_WAIT,1,SRV_LED3,black
+ fcb SRV_WAIT,4,SRV_LED3,mauve
+ fcb SRV_WAIT,1,SRV_LED4,black
+ fcb SRV_WAIT,4,SRV_LED0,mauve
+ fcb SRV_WAIT,1,SRV_LED1,black
+ fcb SRV_WAIT,4,SRV_LED4,mauve
+ fcb SRV_WAIT,1,SRV_LED3,black
+ fcb SRV_WAIT,4,SRV_LED2,mauve
+ fcb SRV_WAIT,1,SRV_LED0,black
+ fcb SRV_WAIT,4,SRV_LED0,mauve
+ fcb SRV_WAIT,1,SRV_LED4,black
+ fcb SRV_WAIT,4,SRV_LED1,mauve
+ fcb SRV_WAIT,1,SRV_LED2,black
+ fcb SRV_WAIT,4,SRV_LED3,mauve
+ fcb SRV_WAIT,1,SRV_LED0,black
+ fcb SRV_WAIT,4,SRV_LED2,mauve
+ fcb SRV_WAIT,1,SRV_LED1,black
+ fcb SRV_WAIT,4,SRV_LED4,mauve
+ fcb SRV_WAIT,1,SRV_LED3,black
+ fcb SRV_WAIT,5,SRV_LED2,black
+ fcb SRV_WAIT,5,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,0,SRV_END
+ fcb SRV_WAIT,0,SRV_LED0,mauve,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,6,SRV_LED0,black
+ fcb SRV_WAIT,4,SRV_LED1,mauve
+ fcb SRV_WAIT,3,SRV_LED3,mauve
+ fcb SRV_WAIT,3,SRV_LED1,black
+ fcb SRV_WAIT,3,SRV_LED3,black
+ fcb SRV_WAIT,1,SRV_LED0,mauve
+ fcb SRV_WAIT,6,SRV_LED0,black
+ fcb SRV_WAIT,1,SRV_LED1,mauve
+ fcb SRV_WAIT,2,SRV_LED4,mauve
+ fcb SRV_WAIT,2,SRV_LED2,mauve
+ fcb SRV_WAIT,2,SRV_LED1,black
+ fcb SRV_WAIT,2,SRV_LED4,black
+ fcb SRV_WAIT,2,SRV_LED2,black
+ fcb SRV_WAIT,3,SRV_LED0,mauve
+ fcb SRV_WAIT,6,SRV_LED0,black
+ fcb SRV_WAIT,2,SRV_LED0,mauve
+ fcb SRV_WAIT,6,SRV_LED0,black
+ fcb SRV_WAIT,6,SRV_LED4,mauve
+ fcb SRV_WAIT,3,SRV_LED2,mauve
+ fcb SRV_WAIT,3,SRV_LED0,mauve,SRV_LED4,black
+ fcb SRV_WAIT,3,SRV_LED2,black
+ fcb SRV_WAIT,3,SRV_LED0,black
+ fcb SRV_WAIT,8,SRV_LED2,mauve
+ fcb SRV_WAIT,6,SRV_LED0,black,SRV_LED1,black,SRV_LED2,black,SRV_LED3,black,SRV_LED4,black
+ fcb SRV_WAIT,0,SRV_END
+ 
+;		fcb	SRV_LED0,15,SRV_LED1,1,SRV_LED2,2,SRV_LED3,3,SRV_LED4,4
+;		fcb	SRV_WAIT,20
+;		fcb	SRV_LED0,5,SRV_LED1,5,SRV_LED2,5,SRV_LED3,5,SRV_LED4,5
+;		fcb	SRV_WAIT,20
+;		fcb	SRV_END
+
+
+	
+	END

@@ -1,6 +1,10 @@
 package com.nabalive.server.web.controller;
 
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
+import com.google.common.collect.Iterables;
 import com.google.common.io.ByteStreams;
+import com.nabalive.application.core.ApplicationManager;
 import com.nabalive.data.core.dao.ApplicationLogoDAO;
 import com.nabalive.data.core.dao.ApplicationStoreDAO;
 import com.nabalive.data.core.model.ApplicationLogo;
@@ -9,26 +13,21 @@ import com.nabalive.framework.web.Request;
 import com.nabalive.framework.web.Response;
 import com.nabalive.framework.web.Route;
 import com.nabalive.framework.web.SimpleRestHandler;
-import com.nabalive.framework.web.exception.HttpException;
-import org.apache.commons.fileupload.MultipartStream;
 import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBufferInputStream;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.jboss.netty.handler.codec.http.HttpVersion;
-import org.jboss.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
-import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -55,6 +54,9 @@ public class ApplicationController {
     @Autowired
     private ApplicationLogoDAO applicationLogoDAO;
 
+    @Autowired
+    private ApplicationManager applicationManager;
+
     @PostConstruct
     void init() {
         restHandler
@@ -62,6 +64,12 @@ public class ApplicationController {
                     @Override
                     public void handle(Request request, Response response, Map<String, String> map) throws Exception {
                         List<ApplicationStore> applicationStores = applicationStoreDAO.find().asList();
+                        Iterables.filter(applicationStores, new Predicate<ApplicationStore>() {
+                            @Override
+                            public boolean apply(@Nullable ApplicationStore applicationStore) {
+                                return applicationManager.getApplication(applicationStore.getApikey()) != null;
+                            }
+                        });
                         response.writeJSON(applicationStores);
                     }
                 })

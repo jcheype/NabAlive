@@ -1,0 +1,90 @@
+; nabaztage asleep
+; v1.0 - Sylvain Huet
+; trame=33
+; sources : info_type_1, info_val_1,... info_type_8, info_val_8, ear_left, ear_right, colormsg_1,colormsg_2,0
+;     x   x   x   x   x   x   x   x   x   x x x x x x x x   
+; src=04000401040204030004030503060000010050f050600&
+
+	ld	r0,0
+	ld	r5,0
+	bsr	@screen
+	wait	2
+	bra	@o
+
+midi_vol	equ	255
+adp_vol	equ	255
+	
+_sign_	equ	5
+
+
+; reglage du volume
+	
+@o	bsr	@musicstop
+	
+	ld	r0,2
+	input	r0,@vol	;interruption bouton3
+	int	r0
+
+	ld	r0,255	; ouverture du volume
+	vol	r0
+
+	bsr	@showsign
+
+@o1	wait	20
+	bra	@o1
+
+; affichage plein ecran : couleur r0, duree r5
+; touche à r0,r1,r2,r4
+@screen	ld	r1,255
+	palette	r0,r1
+	ld	r4,4
+@s1	led	r4,r5
+	dec	r4
+	bge	@s1
+	rts
+
+
+
+; montre la signature, et réinitialise les oreilles
+@showsign
+	ld	r0,_sign_
+	ld	r5,20
+	bsr	@screen
+	wait	r5
+	ld	r0,0
+	ld	r5,20
+	bsr	@screen
+	wait	r5
+	rts
+
+
+@musicstop
+	midistop
+	wavstop
+	rts
+	
+@vol	push	1,0
+	but3	r8
+	ldt	r8,r8,@voldat
+;	ld	r8,80
+	mvol	r8
+	pull	1,0
+	rti
+
+@voldat	fcb	0,160,200
+
+
+@playmid
+	bsr	@musicstop
+	ld	r1,midi_vol
+	vol	r1
+	midiplay	r0
+@playmid0
+        wait    1
+        music   r0
+        tst     r0
+        bne     @playmid0
+	rts
+	
+
+	END

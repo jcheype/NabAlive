@@ -1,0 +1,1289 @@
+; trame=33
+; messager nabaztag
+; v0.1 - Sylvain Huet
+; sources : info_type_1, info_val_1,... info_type_8, info_val_8, ear_left, ear_right, colormsg_1,colormsg_2,0
+;     x   x   x   x   x   x   x   x   x   x x x x x x x x   
+; src=04000401040204030004030503060000010050f050600&
+
+	ld	r0,0
+	ld	r5,0
+	bsr	@screen
+	wait	2
+	bra	@o
+
+midi_vol	equ	255
+adp_vol	equ	210
+	
+NOP	equ	0
+frame_duration	equ	1
+play_midi	equ	2
+stop_midi	equ	3
+play_sound	equ	4
+stop_sound	equ	5
+set_color	equ	6
+set_led_color	equ	7
+set_motor	equ	8
+stop_motor	equ	9
+reset	equ	10
+end	equ	11
+wait_music	equ	12
+nothing	equ	13
+set_led_palette equ 14
+set_palette	equ 15
+
+/state	rmb	1
+/state_none	equ	0
+/state_play	equ	1
+
+/dir0	rmb	1
+/count0	rmb	1
+/dst0	rmb	1
+/dir1	rmb	1
+/count1	rmb	1
+/dst1	rmb	1
+
+/infoi	rmb	1
+/infot	rmb	1
+/infoc	rmb	1
+
+/msgi	rmb	1
+/msgc	rmb	1
+
+/cdown	rmb	1
+/lsrcleft rmb	1
+/lsrcright rmb	1
+
+/palr rmb 8
+/palg rmb 8
+/palb rmb 8
+
+/iclic	equ	10
+/idclic	equ	11
+/ilclic	equ	12
+
+
+_sign_	equ	6
+
+_empty_	equ	0
+_holes_	equ	17
+_infol_	equ	20
+
+
+/itf_comp file interf_compris.mid
+/itf_comm file interf_communion.mid
+/itf_efface file interf_efface.mid
+/itf_noprev file interf_nomessavant.mid
+/itf_prev file interf_precedent.mid
+/itf_stop file interf_stop.mid
+
+rtick	equ	r10	; contient le frameduration en ms.
+rtimeh	equ	r12
+rtimel	equ	r13
+
+
+; reglage du volume
+	
+@o	ld	r0,/state_none
+	str	r0,/state
+
+	bsr	@motorstop
+	bsr	@musicstop
+	
+	ld	r0,2
+	input	r0,@vol	;interruption bouton3
+	int	r0
+
+	ld	r0,255	; ouverture du volume
+	vol	r0
+
+	ld	r0,0
+	input	r0,@clicm	; interruption clic
+
+	ld	r0,16
+	src	r0,r0
+	str	r0,/lsrcleft
+        ld      r0,17
+        src     r0,r0
+        str     r0,/lsrcright
+
+	wait 1
+
+
+
+;	début du clip
+@startclip
+	wait	1
+	clr	r15
+	ld	r0,_empty_
+	bne	@startwait
+	
+	ld	r0,/state_play
+	str	r0,/state
+	wait	1
+	bsr	@showsign
+
+; debut lecture
+	
+@playmsg
+	ld	rtick,10	; valeur par défaut
+	clr	r3	; r3,r4 : pointeur vers la table des fcb
+	clr	r4
+	msec	rtimeh,rtimel	; on récupère l'heure
+	
+@loop	
+	ld	r0,r3
+	ld	r1,$f0
+	and	r0,r1
+	cmp	r0,r1
+	beq	@NOP
+	ldtw	r0,@data	; r0 : temps à attendre
+	incw	r3,r4
+	tst	r0
+	beq	@cmd		; si nul, aller directement au traitement de la commande
+	ld	r1,rtick	; conversion en ms de temps à attendre
+	mulw	r0,r1
+	clrcc
+	addcc	rtimel,r1	; ajouter à la dernière heure
+	addcc	rtimeh,r0
+	bra	@wait1		; aller à la boucle d'attente
+@wait0	wait	1		; attendre un cycle
+	ldr	r0,/dir0	; gestion du moteur 0
+	beq	@w2		; moteur à l'arrêt, ne rien faire
+	clr	r0
+	motorget	r0,r0	; lire la valeur du moteur
+	ldr	r1,/count0
+	sub	r1,r0		; comparer à la valeur cible
+	bgt	@w2		; atteint ou dépassé ?
+	clr	r0		; oui, on arrête le moteur
+	motor	r0,r0
+	str	r0,/dir0
+@w2	ldr	r0,/dir1	; gestion du moteur 1
+	beq	@w3		; moteur à l'arrêt, ne rien faire
+	ld	r0,1
+	motorget	r0,r0	; lire la valeur du moteur
+	ldr	r1,/count1
+	sub	r1,r0		; comparer à la valeur cible
+	bgt	@w3		; atteint ou dépassé ?
+	ld	r0,1		; oui, on arrête le moteur
+	clr	r1
+	motor	r0,r1
+	str	r1,/dir1
+@w3
+@wait1	msec	r0,r1	; vérifier si l'heure de fin d'attente est dépassée
+	clrcc
+	subcc	r1,rtimel
+	subcc	r0,rtimeh
+	blt	@wait0	; si non, attendre un cycle
+
+@cmd	
+	ldtw	r0,@data	; r0 : commande
+	incw	r3,r4
+	
+;	echo	r0
+	and	r0,15
+	bsrt	r0,@tab
+	bra	@loop		; retour au début de la boucle de lecture du clip
+
+@tab
+	fdb	@NOP,@frame_duration,@play_midi,@stop_midi
+	fdb	@play_sound,@stop_sound,@set_color,@set_led_color
+	fdb	@set_motor,@stop_motor,@reset,@end
+	fdb	@wait_music,@nothing,@set_led_palette,@set_palette
+
+@set_led_color
+	ldtw	r5,@data	; lire le numero de la led
+	incw	r3,r4
+	ldtw	r0,@data	; red
+	incw	r3,r4
+	ldtw	r1,@data	; green
+	incw	r3,r4
+	ldtw	r2,@data	; blue
+	incw	r3,r4
+	ldtw	r6,@data	; duree de transition
+	incw	r3,r4
+	ldtw	r7,@data	; type de transition (inutilisé)
+	incw	r3,r4
+	led	r5,r6	; commande de la led
+	rts
+@set_led_palette
+	ldtw	r5,@data	; lire le numero de la led
+	incw	r3,r4
+	ldtw	r0,@data	; numero couleur
+	incw	r3,r4
+	and	r0,7
+	ldr	r2,/palb,r0
+	ldr	r1,/palg,r0
+	ldr	r0,/palr,r0
+	clr	r6
+	led	r5,r6	; commande de la led
+	rts
+@set_color
+	ldtw	r5,@data	; lire le numero de la couleur
+	incw	r3,r4
+	and	r5,7
+	
+	ldtw	r0,@data	; red
+	incw	r3,r4
+	str	r0,/palr,r5
+	ldtw	r1,@data	; green
+	incw	r3,r4
+	str	r1,/palg,r5
+	ldtw	r2,@data	; blue
+	incw	r3,r4
+	str	r2,/palb,r5
+	rts
+@set_palette
+	ldtw	r5,@data	; lire le numero de la palette
+	incw	r3,r4
+	bsr	@cp_palette
+	rts
+
+@cp_palette
+	and	r5,7
+	ld	r0,24
+	mul	r5,r0
+	add	r5,21
+	ld	r1,7
+@cppal	ldt	r0,r5,@tbpal
+	str	r0,/palr,r1
+	inc	r5
+	ldt	r0,r5,@tbpal
+	str	r0,/palg,r1
+	inc	r5
+	ldt	r0,r5,@tbpal
+	str	r0,/palb,r1
+	inc	r5
+	sub	r5,6
+	dec	r1
+	bge	@cppal
+	rts
+	
+
+@frame_duration
+	ldtw	rtick,@data	; lire le frame duration en 1/100s
+	incw	r3,r4
+	ld	r0,10
+	mul	rtick,r0	; maintenant, il est en ms.
+	rts
+@play_midi
+	ldtw	r0,@data	; lire le numéro du morceau
+	incw	r3,r4
+	ldtw	r1,@data	; r1 : inutilisé
+	incw	r3,r4
+        ld      r1,midi_vol
+        vol     r1
+ 	midiplay	r0	; lancer la musique midi
+	rts
+@play_sound
+	ldtw	r0,@data	; lire le numéro du morceau
+	incw	r3,r4
+	ldtw	r1,@data	; r1 : inutilisé
+	incw	r3,r4
+        ld      r1,adp_vol
+        vol     r1
+ 	wavplay	r0		; lancer la musique adp
+	rts
+@set_motor
+	ldtw	r0,@data	; r0=numero moteur
+	incw	r3,r4
+	ldtw	r1,@data	; r1=cible
+	incw	r3,r4
+	ldtw	r5,@data	; r5=nouvelle direction pour atteindre la cible
+	incw	r3,r4
+	tst	r0
+	bne	@sm1		; test numéro de moteur
+
+; cas du moteur 0
+	push	255,255		; on empile tout
+
+	ldr	r3,/dir0
+	beq	@s0d		; le moteur est-il en marche ?
+	
+	clr	r2		; si oui, on calcule la position courante
+	motor	r2,r2		; on arrête le moteur
+	motorget	r2,r2	; on lit la valeur du compteur
+	ldr	r0,/count0
+	sub	r0,r2		; on calcule le nombre de crans qui restaient à parcourir
+	
+	dec	r3
+	bne	@s0a		; le moteur tournait-il dans le sens 1 ?
+	neg	r0		; si oui, on doit retrancher le nombre de crans qui restaient à parcourir
+@s0a	ldr	r2,/dst0
+	add	r2,r0		; r2 : position courante, mais le modulo n'est peut être pas le bon (0<r2<_holes_)
+	bge	@s0b
+	add	r2,_holes_	; cas r2<0
+@s0b	ld	r0,_holes_
+	cmp	r2,r0
+	blo	@s0c
+	sub	r2,r0		; cas r2>_holes_
+@s0c	str	r2,/dst0	; dst0 contient désormais la position courante
+
+@s0d	ldr	r2,/dst0	; r2 : position courante, comprise entre 0 et _holes_
+	tst	r5
+	bne	@s0e		; en fonction du sens de rotation souhaité...
+	sub	r2,r1
+	neg	r2
+	bge	@s0x
+	add	r2,_holes_
+	bra	@s0x
+@s0e	sub	r2,r1
+	bge	@s0x
+	add	r2,_holes_
+@s0x	str	r1,/dst0	; ... on calcule dans r2 le nombre de dents à compter
+	clr	r0
+	motorget	r0,r0
+	add	r0,r2
+	str	r0,/count0	; on en déduit la valeur cible du compteur
+	inc	r5
+	str	r5,/dir0	; et la direction
+	clr	r0
+	motor	r0,r5		; puis on lance le moteur
+	pull	255,255
+	rts
+
+; cas du moteur 1
+@sm1
+	push	255,255		; on empile tout
+
+	ldr	r3,/dir1
+	beq	@s1d		; le moteur est-il en marche ?
+
+	clr	r0		; si oui, on calcule la position courante
+	ld	r2,1
+	motor	r2,r0		; on arrête le moteur
+	motorget	r2,r2	; on lit la valeur du compteur
+	ldr	r0,/count1
+	sub	r0,r2		; on calcule le nombre de crans qui restaient à parcourir
+	
+	dec	r3
+	bne	@s1a		; le moteur tournait-il dans le sens 1 ?
+	neg	r0		; si oui, on doit retrancher le nombre de crans qui restaient à parcourir
+@s1a	ldr	r2,/dst1
+	add	r2,r0		; r2 : position courante, mais le modulo n'est peut être pas le bon (0<r2<_holes_)
+	bge	@s1b
+	add	r2,_holes_	; cas r2<0
+@s1b	ld	r0,_holes_
+	cmp	r2,r0
+	blo	@s1c
+	sub	r2,r0		; cas r2>_holes_
+@s1c	str	r2,/dst1	; dst1 contient désormais la position courante
+
+@s1d	ldr	r2,/dst1	; r2 : position courante, comprise entre 0 et _holes_
+	tst	r5
+	bne	@s1e		; en fonction du sens de rotation souhaité...
+	sub	r2,r1
+	neg	r2
+	bge	@s1x
+	add	r2,_holes_
+	bra	@s1x
+@s1e	sub	r2,r1
+	bge	@s1x
+	add	r2,_holes_
+@s1x	str	r1,/dst1	; ... on calcule dans r2 le nombre de dents à compter
+	ld	r0,1
+	motorget	r0,r0
+	add	r0,r2
+	str	r0,/count1	; on en déduit la valeur cible du compteur
+	inc	r5
+	str	r5,/dir1	; et la direction
+	ld	r0,1
+	motor	r0,r5		; puis on lance le moteur
+	pull	255,255
+	rts
+@wait_music
+;	wait	1
+	music   r0
+        tst     r0
+        beq     @wm1
+	msec    rtimeh,rtimel 
+	decw	r3,r4
+	decw	r3,r4
+@wm1	rts
+
+@nothing
+	rts
+	
+@stop_midi
+@stop_sound
+	bsr	@musicstop
+	wait	5
+	rts
+
+@NOP
+@stop_motor
+@reset
+@end
+	bra	@sendread
+
+@clicplay
+	bra	@pause
+@dclicplay
+	bra	@arch
+@lclicplay
+	bra	@reread
+
+@clicwait
+	bsr	@motorstop
+	bsr	@musicstop
+	ld	r0,0
+	ld	r1,3
+        send    r0,r1 
+	bra	@sendwaitloop
+
+@dclicnone
+	ld	r0,18
+	src	r0,r0
+	tst	r0
+	bne	@arch
+	pull    255,255
+        rti
+
+@clicnone
+        ld      r0,18
+        src     r0,r0
+        tst     r0
+        bne     @clicwait
+ 	pull	255,255
+	rti
+@lclicnone
+	bra	@reread
+
+@arch
+        bsr     @motorstop
+        bsr     @musicstop
+        wait    10
+	ld      r0,/itf_efface
+        bsr     @playmid
+	ld	r0,0
+	ld	r1,1
+        send    r0,r1 
+	bsr     @sendwait
+        rtij    @startclip
+;	bra     @sendwaitloop
+
+@reread
+        bsr     @motorstop
+        bsr     @musicstop
+        wait    10
+        ld      r0,/itf_prev
+        bsr     @playmid
+	ld	r0,0
+	ld	r1,4
+        send    r0,r1 
+	bsr	@sendwait
+        ld      r0,/itf_noprev
+        bsr     @playmid
+	rtij	@startclip
+
+@pause
+	clr	r15
+        bsr     @motorstop
+	bsr	@musicstop
+	wait	10
+        ld      r0,/itf_stop
+        bsr     @playmid
+        ld      r0,0
+        ld      r1,5
+        send    r0,r1 
+        bra     @sendwaitloop
+
+
+@sendread
+        bsr     @motorstop
+	bsr	@musicstop
+	ld	r0,0
+	ld	r1,2
+	send	r0,r1		; envoi info lecture
+        bra     @sendwaitloop
+
+@startwait
+	clr	r15
+	ld	r0,/state_none
+	str	r0,/state
+	bsr	@showsign2
+
+; arrêt du son
+	bsr	@musicstop
+	bsr	@rstearpos	; lecture des valeurs courantes des oreilles pour détection de mouvement
+
+@endclip1
+	clr	r0
+	str	r0,/msgi
+	str	r0,/msgc
+	str	r0,/cdown
+	str	r0,/infoi
+	
+	sec	r0,r1
+	str	r1,/infot
+	
+; boucle d'attente
+@cmdend
+	wait	1
+
+	bsr	@showmsg
+	bsr	@info
+	bsr	@leddown
+	bsr	@moveears
+	bra	@cmdend
+
+
+
+rtype	equ	r10
+rval	equ	r11
+
+; gestion des leds d'information
+@info
+
+	sec	r0,r1
+	ldr	r0,/infot
+	sub	r1,r0
+	ld	r0,_infol_
+	cmp	r1,r0
+	blt	@info0
+	ldr	r0,/infoi
+	inc	r0
+	and	r0,7
+	str	r0,/infoi
+	sec	r0,r1
+	str	r1,/infot
+	clr	r0
+	str	r0,/infoc
+@info0	ldr	r0,/infoi
+	add	r0,r0
+	src	rtype,r0	; type d'information
+	beq	@inforst
+	dec	rtype
+	inc	r0
+	src	rval,r0	; valeur d'information
+
+	ldr	r3,/infoc
+	inc	r3
+	str	r3,/infoc
+	
+	ldt	r5,rtype,@infofirsttype
+	add	r5,rval
+	
+;	echo	r5
+	
+	ldt	r4,r5,@infospeed
+;	echo	r4
+	lsr	r3,r4
+	ldt	r4,r5,@infomskframe
+;	echo	r4
+	and	r3,r4
+	ldt	r4,r5,@infofirst
+;	echo	r4
+	add	r3,r4
+	ld	r4,3
+	mulw	r3,r4
+
+	ld	r5,3
+	ld	r6,0
+	
+	ldtw	r0,@infoframes
+	incw	r3,r4
+	ldt	r2,r0,@infoblue
+	ldt	r1,r0,@infogreen
+	ldt	r0,r0,@infored
+	led	r5,r6
+	
+	dec	r5
+	ldtw	r0,@infoframes
+	incw	r3,r4
+        ldt     r2,r0,@infoblue
+        ldt     r1,r0,@infogreen
+        ldt     r0,r0,@infored
+ 	led	r5,r6
+	
+	dec	r5
+	ldtw	r0,@infoframes
+	incw	r3,r4
+        ldt     r2,r0,@infoblue
+        ldt     r1,r0,@infogreen
+        ldt     r0,r0,@infored
+ 	led	r5,r6
+	rts
+@inforst
+	clr	r0
+	str	r0,/infoi
+	clr	r0
+	str	r0,/infoc
+	palette	r0,r0
+	ld	r4,1
+	ld	r5,40
+	led	r4,r5
+	inc	r4
+	led	r4,r5
+	inc	r4
+	led	r4,r5
+	rts	
+
+; srctype-> animtype = infofirsttype[srctype]
+; srcval-> anim = infofirst[animtype+srcval]
+;       -> msk = infomsk[animtype+srcval]
+;       -> speed = infospeed[animtype+srcval]
+
+@infofirsttype	fcb	0,13,6,0,0,20,24,0
+@infofirst	fcb	0,2,4,8,16,24
+		fcb	32,34,38,42,46,50,54
+		fcb	58,62,66,70,72,76,80
+		fcb	84,88,90,92
+		fcb	94,94,94,94,94,98,98,98,98,98,98
+@infospeed	fcb	4,4,3,3,4,3
+		fcb	6,5,4,3,2,1,0
+		fcb	1,2,3,4,3,2,1
+		fcb	3,3,3,3
+		fcb	4,4,4,4,4,3,3,3,2,2,2
+@infomskframe	fcb	1,1,3,7,7,7
+		fcb	1,3,3,3,3,3,3
+		fcb	3,3,3,1,3,3,3
+		fcb	3,1,1,1
+		fcb	3,3,3,3,3,7,7,7,7,7,7
+		
+@infoframes	fcb	3,3,3,0,0,0
+		fcb	0,3,0,4,0,4
+		fcb	4,4,4,4,4,4,4,4,4,0,0,0
+		fcb	4,0,0,0,0,4,0,0,0,0,4,0,4,0,0,0,0,0,4,0,4,0,0,0
+		fcb	4,0,0,0,4,0,4,0,0,0,4,0,0,0,4,0,4,0,0,0,4,0,4,0
+		fcb	0,3,4,3,4,0,0,0,0,4,3,0,0,4,3,0,0,0,3,4,0,0,0,0
+
+		fcb	9,0,9,0,0,0
+		fcb	0,9,0,9,0,9,0,0,0,0,0,0
+		fcb	0,9,0,9,0,9,0,0,0,0,0,0
+		fcb	0,9,0,9,0,9,0,0,0,0,0,0
+		fcb	0,9,0,9,0,9,0,0,0,0,0,0
+		fcb	0,9,0,9,0,9,0,0,0,0,0,0
+		fcb	0,9,0,9,0,9,0,0,0,0,0,0
+
+                fcb     0,0,11,0,11,0,11,0,0,0,0,0
+                fcb     0,0,11,0,11,0,11,0,0,0,0,0
+                fcb     0,0,11,0,11,0,11,0,0,0,0,0
+                fcb     0,11,0,0,0,0
+                fcb     11,0,0,0,11,0,0,0,11,0,0,0
+                fcb     11,0,0,0,11,0,0,0,11,0,0,0
+                fcb     11,0,0,0,11,0,0,0,11,0,0,0
+
+		fcb	5,0,0,0,5,0,0,0,5,0,5,0
+		fcb	0,5,0,0,0,0
+		fcb	5,0,5,0,0,0
+		fcb	5,5,5,0,0,0
+
+		fcb	6,6,6,6,6,6,6,6,6,0,0,0
+		fcb	6,0,0,0,6,0,6,6,0,6,6,6,0,6,6,0,0,6,6,0,6,6,6,6
+@infored	fcb	0,255,0,255,0,255,0,255,128,255,128,255,128,255,128,255
+@infogreen	fcb	0,0,255,255,0,0,255,255,128,0,255,255,128,128,255,128
+@infoblue	fcb	0,0,0,0,255,255,255,255,128,0,128,128,255,255,255,0
+
+; gestion de l'affichage de la led de message
+@showmsg
+	ldr	r2,/msgi
+	ld	r0,18
+	add	r0,r2
+	src	r0,r0
+	ldr	r1,/msgc
+	add	r1,16
+	str	r1,/msgc
+	bne	@shend
+	tst	r0
+	bne	@shm1
+	ld	r2,255
+@shm1	inc	r2
+	str	r2,/msgi
+@shend	ldr	r1,/msgc
+	osc	r1,r1
+	palette	r0,r1
+	ld	r4,4
+	ld	r5,0
+	led	r4,r5
+	rts
+	
+; gestion de la led du bas (oscillation violette ou ambre)
+@leddown
+	ldr	r1,/cdown
+	add	r1,4
+	lastping	r2,r0
+	beq	@led0
+;	echo	r0
+	tst	r2
+	bne	@led0
+	ld	r2,120
+	cmp	r0,r2
+	bhi	@led1
+	ld	r0,5
+	download	r2
+	and	r2,2
+	beq	@led2
+	add	r1,28
+	bra	@led2
+@led0	add	r1,28
+@led1	ld	r0,15
+@led2	str	r1,/cdown
+	osc	r1,r1
+	palette	r0,r1
+	clr	r4
+	led	r4,r4
+	rts
+
+@sendwaitloop
+        ld      r0,0
+	inputrst	r0
+	bsr	@sendwait
+	bra	@sendwaitloop
+
+@sendwait
+	clr	r0
+	palette	r0,r0
+	ld	r3,4
+	ld	r4,20
+	led	r3,r4
+@sendw1	wait	1
+	bsr	@leddown
+	ld	r5,6
+	osc	r1,r10
+	palette	r5,r1
+	ld	r3,1
+	ld	r4,0
+	led	r3,r4
+
+	add	r10,40
+	osc	r1,r10
+	palette	r5,r1
+	inc	r3
+	led	r3,r4
+	
+	add	r10,40
+	osc	r1,r10
+	palette	r5,r1
+	inc	r3
+	led	r3,r4
+
+	add	r10,192
+
+	sendready	r0
+	echo	r0
+	dec	r0
+	bne	@sendw1
+	download	r1
+	and	r1,6
+	bne	@sendw1
+
+	rts
+	
+
+
+
+; affichage plein ecran : couleur r0, duree r5
+; touche à r0,r1,r2,r4
+@screen	ld	r1,255
+	palette	r0,r1
+	ld	r4,4
+@s1	led	r4,r5
+	dec	r4
+	bge	@s1
+	rts
+
+@chkhole
+	tst	r0
+	bgt	@chkh1
+	add	r0,_holes_
+	bra	@chkhole
+@chkh1	ld	r1,_holes_
+	cmp	r0,r1
+	blo	@chkh2
+	sub	r0,_holes_
+	bra	@chkh1
+@chkh2	rts
+
+
+@moveears
+	ld	r0,16
+	src	r0,r0
+	ldr	r1,/lsrcleft
+	cmp	r0,r1
+	beq	@mvchg1
+	str	r0,/lsrcleft
+	ld	r0,17
+	src	r0,r0
+	str	r0,/lsrcright
+	bra	@mvchg2
+@mvchg1	ld	r0,17
+        src     r0,r0
+        ldr     r1,/lsrcright
+        cmp     r0,r1
+        beq     @mvchg3
+	str	r0,/lsrcright
+@mvchg2	ld	r0,/itf_comm
+	bsr	@playmid
+@mvchg3
+ 
+
+	clr	r2
+	ld	r0,16
+	src	r0,r0	; oreille gauche
+	ldr	r1,/dst0
+	cmp	r1,r0
+	beq	@move0
+	ld	r2,1
+@move0	clr	r0
+	motor	r0,r2
+	str	r2,/dir0
+	
+	tst	r2
+	beq	@move1
+	clr	r0
+	motorget	r0,r0
+	ldr	r1,/count0
+	str	r0,/count0
+	sub	r0,r1
+	ldr	r1,/dst0
+	add	r0,r1
+	bsr	@chkhole
+	str	r0,/dst0
+@move1
+	clr	r2
+	ld	r0,17
+	src	r0,r0	; oreille droite
+	ldr	r1,/dst1
+	cmp	r1,r0
+	beq	@move2
+	ld	r2,1
+@move2	ld	r0,1
+	motor	r0,r2
+	str	r2,/dir1
+
+	tst	r2
+	beq	@move3
+	ld	r0,1
+	motorget	r0,r0
+	ldr	r1,/count1
+	str	r0,/count1
+	sub	r0,r1
+	ldr	r1,/dst1
+	add	r0,r1
+	bsr	@chkhole
+	str	r0,/dst1
+
+@move3	ldr	r0,/dir0
+	ldr	r1,/dir1
+	add	r0,r1
+	beq	@tstears
+	rts
+
+; tst de changement de position des oreilles
+@tstears
+	clr	r0	; verification oreille 0
+	motorget	r0,r0
+	ldr	r1,/count0
+	sub	r0,r1
+	sub	r0,3
+	bgt	@tstear1
+	ld	r0,1	; verification oreille 1
+	motorget	r0,r0
+	ldr	r1,/count1
+	sub	r0,r1
+	sub	r0,3
+	bgt	@tstear1
+	rts
+
+_cycleswait_	equ	60
+@tstear1
+	ld	r0,5	; on passe en violet, en attendant que le mouvement s'arrête
+	ld	r5,1
+	bsr	@screen
+
+	clr	r0	; on lit la valeur courante des moteurs (r2,r3)
+	ld	r1,1
+	motorget	r2,r0
+	motorget	r3,r1
+	ld	r4,_cycleswait_	; r4 : compteur de cycles
+@tstear2
+	wait	1
+	clr	r0	; verification oreille 0
+	motorget	r0,r0
+	cmp	r0,r2
+	beq	@tstear3
+	ld	r4,_cycleswait_	; l'oreille 0 a encore bougé, on réarme l'attente
+	ld	r2,r0
+@tstear3
+	ld	r0,1	; verification oreille 1
+	motorget	r0,r0
+	cmp	r0,r3
+	beq	@tstear4
+	ld	r4,_cycleswait_	; l'oreille 1 a encore bougé, on réarme l'attente
+	ld	r3,r0
+@tstear4	dec	r4
+	bne	@tstear2	; a-t-on attendu assez ?
+
+	ld	r0,15	; le mouvement est terminé, on va commencer l'acquisition
+	ld	r5,5
+	bsr	@screen	; on affiche un écran de couleur vert pâle
+	
+	bsr	@motorturn	; appel de l'acquisition
+
+	ldr	r0,/dst0
+	ldr	r1,/dst1
+	str	r0,/lsrcleft
+	str	r1,/lsrcright
+	or	r0,128
+	send	r0,r1		; envoi de la position (avec bit7 de r0 à 1)
+	
+	bsr	@sendwait	; attente de la fin de l'envoi
+	bsr	@rstearpos	; on relit la position des oreilles, pour détecter le prochain mouvement
+	rts
+
+@rstearpos
+	clr	r0	; on lit les moteurs
+	ld	r1,1
+	motorget	r0,r0
+	str	r0,/count0
+	motorget	r0,r1
+	str	r0,/count1
+	rts
+
+
+; procédure de remise en position 0 des oreilles
+@motorreset
+	push	255,255
+	clr	r0	; on lance les moteurs
+	ld	r1,1
+	motorget	r2,r0
+	motorget	r3,r1
+	motor	r0,r1
+	inc	r0
+	motor	r0,r1
+	
+	ld	r4,100
+	ld	r6,100
+	ld	r5,100
+	ld	r7,100
+	ld	r8,0
+	sec	r0,r10
+	add	r10,30
+@reset0	wait	1
+	sec	r0,r1
+	cmp	r1,r10
+	bne	@reset0b
+	bsr	@motorstop
+	bra	@reset7
+@reset0b
+	ld	r0,r8
+	and	r0,1
+	bne	@reset2b
+	clr	r0
+	motorget	r0,r0
+	cmp	r0,r2
+	bne	@reset1
+	inc	r4
+	bra	@reset3
+@reset1
+	ld	r2,r0
+	ld	r0,1
+	ld	r1,r4
+	lsr	r1,r0
+	cmp	r1,r6
+	bhs	@reset2
+	ld	r6,r4
+	clr	r4
+	bra	@reset3
+@reset2	ld	r9,r2
+	add	r9,2
+	or	r8,1
+@reset2b
+	ld	r0,r8
+	and	r0,4
+	bne	@reset3
+        ld	r0,0
+	motorget	r0,r0
+	cmp     r9,r0
+        bne     @reset3
+ 	clr	r0
+	motor	r0,r0
+	or	r8,4
+@reset3
+	ld	r0,r8
+	and	r0,2
+	bne	@reset5b
+	ld	r0,1
+	motorget	r0,r0
+	cmp	r0,r3
+	bne	@reset4
+	inc	r5
+	bra	@reset6
+@reset4
+	ld	r3,r0
+	ld	r0,1
+	ld	r1,r5
+	lsr	r1,r0
+	cmp	r1,r7
+	bhs	@reset5
+	ld	r7,r5
+	clr	r5
+	bra	@reset6
+@reset5 ld      r10,r3
+        add     r10,2
+        or      r8,2
+@reset5b
+        ld      r0,r8
+        and     r0,8
+        bne     @reset6
+        ld      r0,1
+        motorget        r0,r0
+        cmp     r10,r0
+        bne     @reset6
+        ld      r0,1
+	clr	r1
+        motor   r0,r1
+        or      r8,8
+@reset6	ld	r0,15
+	cmp	r8,r0
+	bne	@reset0
+@reset7	clr	r0
+	str	r0,/dir0
+	str	r0,/dst0
+	str	r0,/dir1
+	str	r0,/dst1
+	pull	255,255
+	wait	1
+	rts
+
+rcur0	equ	r2
+rcur1	equ	r3
+rstart0	equ	r4
+rstart1	equ	r5
+rcount0	equ	r6
+rcount1	equ	r7
+rpmax0	equ	r8
+rpmax1	equ	r9
+rcmax0	equ	r10
+rcmax1	equ	r11
+rflag	equ	r12
+
+; procédure d'acquisition de la position des oreilles
+@motorturn
+	push	255,255
+	clr	r0	; on lance les moteurs
+	ld	r1,1
+	motorget	rcur0,r0
+	motorget	rcur1,r1
+	motor	r0,r1
+	motor	r1,r1
+	ld	rstart0,rcur0
+	ld	rcount0,0
+	ld	rcmax0,0
+	ld	rstart1,rcur1
+	ld	rcount1,0
+	ld	rcmax1,0
+	ld	rflag,0
+@m0t0	wait	1
+	ld	r0,rflag
+	and	r0,1
+	bne	@motor1
+	clr	r0
+	motorget	r0,r0
+	cmp	r0,rcur0
+	bne	@m0t1
+	inc	rcount0
+	bra	@motor1
+@m0t1
+	cmp	rcount0,rcmax0
+	blo	@m0t2
+	ld	rcmax0,rcount0
+	ld	rpmax0,r0
+@m0t2	ld	rcur0,r0
+	clr	rcount0
+	sub	r0,rstart0
+	sub	r0,_holes_
+	blt	@motor1
+	clr	r0
+	motor	r0,r0	; arret moteur 0
+	or	rflag,1
+
+@motor1
+	ld	r0,rflag
+	and	r0,2
+	bne	@motor2
+	ld	r0,1
+	motorget	r0,r0
+	cmp	r0,rcur1
+	bne	@m1t1
+	inc	rcount1
+	bra	@motor2
+@m1t1
+	cmp	rcount1,rcmax1
+	blo	@m1t2
+	ld	rcmax1,rcount1
+	ld	rpmax1,r0
+@m1t2	ld	rcur1,r0
+	clr	rcount1
+	sub	r0,rstart1
+	sub	r0,_holes_
+	blt	@motor2
+	ld	r0,1
+	clr	r1
+	motor	r0,r1	; arret moteur 1
+	or	rflag,2
+	
+@motor2
+	ld	r0,3
+	cmp	rflag,r0
+	bne	@m0t0
+	
+	add	rstart0,_holes_
+	sub	rstart0,rpmax0
+	sub	rstart0,2
+	bge	@motor3
+	add	rstart0,_holes_
+@motor3	add	rstart1,_holes_
+	sub	rstart1,rpmax1
+        sub     rstart1,2
+        bge     @motor4
+        add     rstart1,_holes_
+@motor4	echo	rstart0
+	echo	rstart1
+	clr	r0
+	str	r0,/dir0
+	str	rstart0,/dst0
+	str	r0,/dir1
+	str	rstart1,/dst1
+	ld	r0,/itf_comp
+	bsr	@playmid
+	pull	255,255
+	rts
+
+@motorstop
+	clr	r0	; on arrête les moteurs
+	ld	r1,1
+	motor	r0,r0
+	motor	r1,r0
+	rts
+	
+
+; montre la signature, et réinitialise les oreilles
+@showsign
+	ld	r0,_sign_
+	ld	r5,20
+	bsr	@screen
+	wait	r5
+	bsr	@motorreset
+	ld	r0,0
+	ld	r5,20
+	bsr	@screen
+	wait	r5
+	rts
+
+; montre la signature, et réinitialise les oreilles
+@showsign2
+	ld	r0,5
+	ld	r5,20
+	bsr	@screen
+	wait	r5
+	bsr	@motorreset
+@sh2	wait	1
+	music	r0
+	tst	r0
+	bne	@sh2
+	ld	r0,0
+	ld	r5,20
+	bsr	@screen
+	wait	r5
+	rts
+
+
+@musicstop
+	midistop
+	wavstop
+	rts
+	
+@vol	push	1,0
+	but3	r8
+	ldt	r8,r8,@voldat
+;	ld	r8,80
+	mvol	r8
+	pull	1,0
+	rti
+
+@voldat	fcb	0,160,200
+
+; affichage des leds pour feedback clic
+@clicled	
+	ld	r1,255
+	palette	r0,r1
+	ld	r3,4
+	ld	r4,0
+	led	r3,r4
+	rts
+	
+@clicm	push	255,255
+	ld	r0,0
+	inputrst	r0	; inhibition de l'interruption de clic
+	ld	r0,15
+	bsr	@clicled
+	clr	r5
+@clicm1	wait	1
+	inc	r5
+	ld	r0,40
+	cmp	r5,r0
+	blt	@clicm3
+	ld	r0,1
+	bsr	@clicled
+@clicm2	wait	1
+	pushbutton	r0
+	tst	r0
+	bne	@clicm2
+	ld	r0,2
+	bra	@clicm6
+@clicm3	pushbutton	r0
+	tst	r0
+	bne	@clicm1
+
+	ld	r5,12
+@clicm4	wait	1
+	dec	r5
+	beq	@clicm5
+	pushbutton	r0
+	tst	r0
+	beq	@clicm4
+	ld	r0,1
+	bra	@clicm6
+@clicm5	ld	r0,0
+@clicm6	ldr	r1,/state
+	echo	r1
+	ld	r2,3
+	mul	r1,r2
+	echo	r1
+	add	r1,r0
+	echo	r1
+	ld	r0,0
+	input	r0,@clicm	; interruption clic
+	brat	r1,@tbclics
+@tbclics
+	fdb	@clicnone,@dclicnone,@lclicnone
+	fdb	@clicplay,@dclicplay,@lclicplay
+
+@playmid
+	bsr	@musicstop
+	ld	r1,midi_vol
+	vol	r1
+	midiplay	r0
+@playmid0
+        wait    1
+        music   r0
+        tst     r0
+        bne     @playmid0
+	rts
+
+@tbpal	fcb	255,12,0,0,255,31,255,242,0,0,3,255,255,242,0,0,255,31,255,12,0,0,0,0
+	fcb	95,0,255,127,0,255,146,0,255,191,0,255,223,0,255,255,0,223,255,0,146,0,0,0
+	fcb	255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,0,0,0
+	fcb	254,128,2,243,68,2,216,6,7,200,4,13,170,0,24,218,5,96,207,6,138,0,0,0
+	fcb	20,155,18,255,0,0,252,243,5,20,155,18,252,243,5,255,0,0,20,155,18,0,0,0
+	fcb	252,238,71,206,59,69,85,68,212,78,167,82,243,75,153,151,71,196,255,255,255,0,0,0
+	fcb	204,255,102,204,255,0,153,255,0,51,204,0,0,153,51,0,136,0,0,102,510,0,0
+	fcb	204,255,102,204,255,0,153,255,0,51,204,0,0,153,51,0,136,0,0,102,510,0,0
+
+
+@data
+<data>
+	FCB	0,end
+	
+	END
