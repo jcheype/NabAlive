@@ -122,6 +122,7 @@ public class ApplicationGroovyLoader implements ApplicationContextAware {
         Object aScript = clazz.newInstance();
         Application application = (Application) aScript;
 
+        applicationContext.getAutowireCapableBeanFactory().autowireBean(application);
         applicationContext.getAutowireCapableBeanFactory().initializeBean(application, name+".groovy");
         return application;
     }
