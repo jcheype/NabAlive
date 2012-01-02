@@ -33,6 +33,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class LocateController {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final String XMPP_PORT = System.getProperty("xmpp.port");
+    private final String HOST = System.getProperty("host");
 
     @Autowired
     private SimpleRestHandler restHandler;
@@ -40,7 +41,7 @@ public class LocateController {
     @Autowired
     private ApplicationManager applicationManager;
 
-    private final Pattern domainPattern = Pattern.compile("([^:]+)");
+    //private final Pattern domainPattern = Pattern.compile("([^:]+)");
 
     @PostConstruct
     void init() {
@@ -48,22 +49,15 @@ public class LocateController {
                 .get(new Route(".*/locate.jsp") {
                     @Override
                     public void handle(Request request, Response response, Map<String, String> map) throws Exception {
-                        String host = request.request.getHeader("Host");
-                        logger.debug("host: {}", host);
-                        Matcher matcher = domainPattern.matcher(host);
-                        if (matcher.find()) {
-                            String domain = matcher.group(1);
-                            StringBuilder sb = new StringBuilder();
-                            sb.append("ping " + domain + "\n");
-                            sb.append("broad " + domain + "\n");
-                            if(XMPP_PORT != null)
-                                sb.append("xmpp_domain " + domain + ":"+ XMPP_PORT +"\n");
-                            else
-                                sb.append("xmpp_domain " + domain + "\n");
-                            response.write(sb.toString());
-                        } else {
-                            response.write(new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR));
-                        }
+                        StringBuilder sb = new StringBuilder();
+                        sb.append("ping " + HOST + "\n");
+                        sb.append("broad " + HOST + "\n");
+                        if (XMPP_PORT != null)
+                            sb.append("xmpp_domain " + HOST + ":" + XMPP_PORT + "\n");
+                        else
+                            sb.append("xmpp_domain " + HOST + "\n");
+                        response.write(sb.toString());
+
                     }
                 })
                 .get(new Route(".*/bc.jsp") {

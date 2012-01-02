@@ -35,6 +35,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @Component("horoscope")
 public class HoroscopeApplication extends ApplicationBase {
     private static final String BASE_URL_FR = "http://www.horoscope.fr/rss/horoscope/jour/";
+    private static final String HOST = System.getProperty("host");
+
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private AsyncHttpClient asyncHttpClient = new AsyncHttpClient(
             new AsyncHttpClientConfig.Builder()
@@ -100,7 +102,7 @@ public class HoroscopeApplication extends ApplicationBase {
 
         String text = URLEncoder.encode(msg, "UTF-8");
         StringBuilder command = new StringBuilder();
-        command.append("MU http://www.nabalive.com/tts/"+nabaztag.getApikey()+"/fr?text="+text+"\nMW\n");
+        command.append("MU http://"+HOST+"/tts/"+nabaztag.getApikey()+"/fr?text="+text+"\nMW\n");
 
 
         messageService.sendMessage(nabaztag.getMacAddress(), command.toString());
