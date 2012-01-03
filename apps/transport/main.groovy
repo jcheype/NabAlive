@@ -13,7 +13,7 @@ import groovy.json.JsonSlurper
 import org.springframework.beans.factory.annotation.Autowired;
 
 
-public class LotoApplication extends ApplicationBase{
+public class TransportApplication extends ApplicationBase{
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     
     
