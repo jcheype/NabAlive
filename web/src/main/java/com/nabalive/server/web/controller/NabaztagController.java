@@ -441,6 +441,30 @@ public class NabaztagController {
 
                         response.writeJSON("ok");
                     }
+                })
+                .get(new Route("/nab2nabs/:apikey/tts") {
+                    @Override
+                    public void handle(Request request, Response response, Map<String, String> map) throws Exception {
+                        String apikey = checkNotNull(map.get("apikey"));
+                        String text = checkNotNull(request.getParam("text"));
+                        Nabaztag nabaztag = checkNotNull(nabaztagDAO.findOne("apikey", apikey));
+                        Set<Subscription> subscriptionSet = nabaztag.getSubscribe();
+
+                        List<ObjectId> objectList = new ArrayList<ObjectId>();
+                        for (Subscription subscription : subscriptionSet) {
+                            objectList.add(new ObjectId(subscription.getObjectId()));
+                        }
+                        List<Nabaztag> nabaztagList = nabaztagDAO.find(nabaztagDAO.createQuery().field("_id").in(objectList)).asList();
+
+                        for (Nabaztag nab : nabaztagList) {
+                            if (connectionManager.containsKey(nab.getMacAddress())){
+                                String host = request.request.getHeader("Host");
+                                tts(nab.getMacAddress(), host, "FR", text);
+                            }
+                        }
+
+                        response.writeJSON("ok");
+                    }
                 });
     }
 

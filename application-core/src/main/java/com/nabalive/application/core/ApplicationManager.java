@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.Map;
 
 @Component
@@ -32,6 +33,8 @@ public class ApplicationManager implements ApplicationContextAware, BeanPostProc
     private ApplicationLogoDAO applicationLogoDAO;
 
     private ApplicationContext applicationContext;
+    
+    private Map<String , Application> applicationMap = new HashMap<String, Application>();
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
@@ -39,13 +42,7 @@ public class ApplicationManager implements ApplicationContextAware, BeanPostProc
     }
 
     public Application getApplication(String apikey) {
-        Map<String, Application> applicationMap = applicationContext.getBeansOfType(Application.class);
-        for (Map.Entry<String, Application> entry : applicationMap.entrySet()) {
-            if (apikey.equals(entry.getValue().getApikey())) {
-                return entry.getValue();
-            }
-        }
-        return null;
+        return applicationMap.get(apikey);
     }
 
     @Override
@@ -68,9 +65,20 @@ public class ApplicationManager implements ApplicationContextAware, BeanPostProc
 
     private void registerApp(Application application, String name) throws IOException {
         logger.debug("registering: {}", name);
+        if(name.endsWith("groovy")){
+            return;
+        }
 
         InputStream inputStream = application.getClass().getResourceAsStream("/"+name + ".json");
         String jsonString = new String(ByteStreams.toByteArray(inputStream), "UTF-8");
+
+        InputStream logoInputStream = application.getClass().getResourceAsStream("/"+name + ".png");
+        byte[] logo = ByteStreams.toByteArray(logoInputStream);
+        registerApp(application, name, jsonString, logo);
+    }
+
+    public void registerApp(Application application, String name, String jsonString, byte[] logo) throws IOException {
+        logger.debug("registering: {}", name);
         DBObject dbObject = (DBObject) JSON.parse(jsonString);
         dbObject.put("className", ApplicationStore.class.getName());
         dbObject.put("name", name);
@@ -78,20 +86,28 @@ public class ApplicationManager implements ApplicationContextAware, BeanPostProc
 
         BasicDBObject query = new BasicDBObject("apikey", application.getApikey());
 
-
-
         logger.debug("upsert: {}", dbObject);
         applicationStoreDAO.getCollection().update(query, dbObject, true, false, WriteConcern.SAFE);
 
-        InputStream logoInputStream = application.getClass().getResourceAsStream("/"+name + ".png");
-        applicationLogoDAO.deleteById("application.getApikey()");
+        applicationLogoDAO.deleteById(application.getApikey());
         ApplicationLogo applicationLogo = new ApplicationLogo();
-        applicationLogo.setData(ByteStreams.toByteArray(logoInputStream));
+        applicationLogo.setData(logo);
         applicationLogo.setApikey(application.getApikey());
         applicationLogo.setContentType("application/octet-stream");
         applicationLogo.setFilename("logo.png");
         applicationLogoDAO.save(applicationLogo);
 
+        applicationMap.put(application.getApikey(), application);
+    }
+    
+    public void unRegister(ApplicationStore applicationStore){
+        applicationLogoDAO.deleteById(applicationStore.getApikey());
+        applicationStoreDAO.delete(applicationStore);
+    }
 
+    public void unRegisterByName(String name){
+        ApplicationStore applicationStore = applicationStoreDAO.findOne("name", name);
+        if(applicationStore != null)
+            unRegister(applicationStore);
     }
 }

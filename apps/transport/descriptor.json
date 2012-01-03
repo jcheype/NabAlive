@@ -1,0 +1,32 @@
+{ "triggers":[ "RFID" ],
+    "fields":[
+        {
+            "type":"SELECT",
+            "label":"Ligne",
+            "name":"ligne",
+            "values":{
+                   "Tout"    :"all",
+                   "RER A"   :"RER A",
+                   "RER B"   :"RER B",
+                   "RER C"   :"RER C",
+                   "RER D"   :"RER D",
+                   "RER E"   :"RER E",
+                   "Métro 1" :"Métro 1",
+                   "Métro 2" :"Métro 2",
+                   "Métro 3" :"Métro 3",
+                   "Métro 4" :"Métro 4",
+                   "Métro 5" :"Métro 5",
+                   "Métro 6" :"Métro 6",
+                   "Métro 7" :"Métro 7",
+                   "Métro 8" :"Métro 8",
+                   "Métro 9" :"Métro 9",
+                   "Métro 10" :"Métro 10",
+                   "Métro 11" :"Métro 11",
+                   "Métro 12" :"Métro 12",
+                   "Métro 13" :"Métro 13",
+                   "Métro 14" :"Métro 14"
+            }                 
+        }
+    ],
+    "description": "Votre lapin vous prévient des pertubations sur votre ligne RER/Métro."
+}

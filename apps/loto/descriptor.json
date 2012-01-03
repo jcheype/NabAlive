@@ -1,0 +1,4 @@
+{ "triggers":[ "RFID" ],
+    "fields":[ ],
+    "description": "Votre Nabaztag vous donne les derniers résultat du loto."
+}

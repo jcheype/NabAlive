@@ -8,3 +8,4 @@
 target/
 web-front/public
 web-front/tmp
+*.log

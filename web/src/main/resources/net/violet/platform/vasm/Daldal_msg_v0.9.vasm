@@ -1,0 +1,784 @@
+; trame=33
+; messager nabaztag
+; v0.1 - Sylvain Huet
+; sources : info_type_1, info_val_1,... info_type_8, info_val_8, ear_left, ear_right, colormsg_1,colormsg_2,0
+;     x   x   x   x   x   x   x   x   x   x x x x x x x x   
+; src=04000401040204030004030503060000010050f050600&
+
+	ld	r0,0
+	ld	r5,0
+	bsr	@screen
+	wait	2
+	bra	@o
+
+midi_vol	equ	255
+adp_vol	equ	210
+	
+NOP	equ	0
+frame_duration	equ	1
+play_midi	equ	2
+stop_midi	equ	3
+play_sound	equ	4
+stop_sound	equ	5
+set_color	equ	6
+set_led_color	equ	7
+set_motor	equ	8
+stop_motor	equ	9
+reset	equ	10
+end	equ	11
+wait_music	equ	12
+nothing	equ	13
+set_led_palette equ 14
+set_palette	equ 15
+
+/state	rmb	1
+/state_none	equ	0
+/state_play	equ	1
+
+/dir0	rmb	1
+/count0	rmb	1
+/dst0	rmb	1
+/dir1	rmb	1
+/count1	rmb	1
+/dst1	rmb	1
+
+/infoi	rmb	1
+/infot	rmb	1
+/infoc	rmb	1
+
+/msgi	rmb	1
+/msgc	rmb	1
+
+/cdown	rmb	1
+/lsrcleft rmb	1
+/lsrcright rmb	1
+
+/palr rmb 8
+/palg rmb 8
+/palb rmb 8
+
+/iclic	equ	10
+/idclic	equ	11
+/ilclic	equ	12
+
+
+_sign_	equ	6
+
+_empty_	equ	0
+_holes_	equ	17
+_infol_	equ	20
+
+
+/itf_comp file interf_compris.mid
+/itf_comm file interf_communion.mid
+/itf_efface file interf_efface.mid
+/itf_noprev file interf_nomessavant.mid
+/itf_prev file interf_precedent.mid
+/itf_stop file interf_stop.mid
+
+rtick	equ	r10	; contient le frameduration en ms.
+rtimeh	equ	r12
+rtimel	equ	r13
+
+
+; reglage du volume
+	
+@o	ld	r0,/state_none
+	str	r0,/state
+
+	bsr	@musicstop
+	
+	ld	r0,2
+	input	r0,@vol	;interruption bouton3
+	int	r0
+
+	ld	r0,255	; ouverture du volume
+	vol	r0
+
+	ld	r0,0
+	input	r0,@clicm	; interruption clic
+
+	ld	r0,16
+	src	r0,r0
+	str	r0,/lsrcleft
+        ld      r0,17
+        src     r0,r0
+        str     r0,/lsrcright
+
+	wait 1
+
+
+
+;	début du clip
+@startclip
+	wait	1
+	clr	r15
+	ld	r0,_empty_
+	bne	@startwait
+	
+	ld	r0,/state_play
+	str	r0,/state
+	wait	1
+	bsr	@showsign
+
+; debut lecture
+	
+@playmsg
+	ld	rtick,10	; valeur par défaut
+	clr	r3	; r3,r4 : pointeur vers la table des fcb
+	clr	r4
+	msec	rtimeh,rtimel	; on récupère l'heure
+	
+@loop	
+	ld	r0,r3
+	ld	r1,$f0
+	and	r0,r1
+	cmp	r0,r1
+	beq	@NOP
+	ldtw	r0,@data	; r0 : temps à attendre
+	incw	r3,r4
+	tst	r0
+	beq	@cmd		; si nul, aller directement au traitement de la commande
+	ld	r1,rtick	; conversion en ms de temps à attendre
+	mulw	r0,r1
+	clrcc
+	addcc	rtimel,r1	; ajouter à la dernière heure
+	addcc	rtimeh,r0
+	bra	@wait1		; aller à la boucle d'attente
+@wait0	wait	1		; attendre un cycle
+@wait1	msec	r0,r1	; vérifier si l'heure de fin d'attente est dépassée
+	clrcc
+	subcc	r1,rtimel
+	subcc	r0,rtimeh
+	blt	@wait0	; si non, attendre un cycle
+
+@cmd	
+	ldtw	r0,@data	; r0 : commande
+	incw	r3,r4
+	
+;	echo	r0
+	and	r0,15
+	bsrt	r0,@tab
+	bra	@loop		; retour au début de la boucle de lecture du clip
+
+@tab
+	fdb	@NOP,@frame_duration,@play_midi,@stop_midi
+	fdb	@play_sound,@stop_sound,@set_color,@set_led_color
+	fdb	@set_motor,@stop_motor,@reset,@end
+	fdb	@wait_music,@nothing,@set_led_palette,@set_palette
+
+@set_led_color
+	ldtw	r5,@data	; lire le numero de la led
+	incw	r3,r4
+	ldtw	r0,@data	; red
+	incw	r3,r4
+	ldtw	r1,@data	; green
+	incw	r3,r4
+	ldtw	r2,@data	; blue
+	incw	r3,r4
+	ldtw	r6,@data	; duree de transition
+	incw	r3,r4
+	ldtw	r7,@data	; type de transition (inutilisé)
+	incw	r3,r4
+	led	r5,r6	; commande de la led
+	rts
+@set_led_palette
+	ldtw	r5,@data	; lire le numero de la led
+	incw	r3,r4
+	ldtw	r0,@data	; numero couleur
+	incw	r3,r4
+	and	r0,7
+	ldr	r2,/palb,r0
+	ldr	r1,/palg,r0
+	ldr	r0,/palr,r0
+	clr	r6
+	led	r5,r6	; commande de la led
+	rts
+@set_color
+	ldtw	r5,@data	; lire le numero de la couleur
+	incw	r3,r4
+	and	r5,7
+	
+	ldtw	r0,@data	; red
+	incw	r3,r4
+	str	r0,/palr,r5
+	ldtw	r1,@data	; green
+	incw	r3,r4
+	str	r1,/palg,r5
+	ldtw	r2,@data	; blue
+	incw	r3,r4
+	str	r2,/palb,r5
+	rts
+@set_palette
+	ldtw	r5,@data	; lire le numero de la palette
+	incw	r3,r4
+	bsr	@cp_palette
+	rts
+
+@cp_palette
+	and	r5,7
+	ld	r0,24
+	mul	r5,r0
+	add	r5,21
+	ld	r1,7
+@cppal	ldt	r0,r5,@tbpal
+	str	r0,/palr,r1
+	inc	r5
+	ldt	r0,r5,@tbpal
+	str	r0,/palg,r1
+	inc	r5
+	ldt	r0,r5,@tbpal
+	str	r0,/palb,r1
+	inc	r5
+	sub	r5,6
+	dec	r1
+	bge	@cppal
+	rts
+	
+
+@frame_duration
+	ldtw	rtick,@data	; lire le frame duration en 1/100s
+	incw	r3,r4
+	ld	r0,10
+	mul	rtick,r0	; maintenant, il est en ms.
+	rts
+@play_midi
+	ldtw	r0,@data	; lire le numéro du morceau
+	incw	r3,r4
+	ldtw	r1,@data	; r1 : inutilisé
+	incw	r3,r4
+        ld      r1,midi_vol
+        vol     r1
+ 	midiplay	r0	; lancer la musique midi
+	rts
+@play_sound
+	ldtw	r0,@data	; lire le numéro du morceau
+	incw	r3,r4
+	ldtw	r1,@data	; r1 : inutilisé
+	incw	r3,r4
+        ld      r1,adp_vol
+        vol     r1
+ 	wavplay	r0		; lancer la musique adp
+	rts
+@set_motor
+	ldtw	r0,@data	; r0=numero moteur
+	incw	r3,r4
+	ldtw	r1,@data	; r1=cible
+	incw	r3,r4
+	ldtw	r5,@data	; r5=nouvelle direction pour atteindre la cible
+	incw	r3,r4
+	rts
+	
+@wait_music
+;	wait	1
+	music   r0
+        tst     r0
+        beq     @wm1
+	msec    rtimeh,rtimel 
+	decw	r3,r4
+	decw	r3,r4
+@wm1	rts
+
+@nothing
+	rts
+	
+@stop_midi
+@stop_sound
+	bsr	@musicstop
+	wait	5
+	rts
+
+@NOP
+@stop_motor
+@reset
+@end
+	bra	@sendread
+
+@clicplay
+	bra	@pause
+@dclicplay
+	bra	@arch
+@lclicplay
+	bra	@reread
+
+@clicwait
+	bsr	@musicstop
+	ld	r0,0
+	ld	r1,3
+        send    r0,r1 
+	bra	@sendwaitloop
+
+@dclicnone
+	ld	r0,18
+	src	r0,r0
+	tst	r0
+	bne	@arch
+	pull    255,255
+        rti
+
+@clicnone
+        ld      r0,18
+        src     r0,r0
+        tst     r0
+        bne     @clicwait
+ 	pull	255,255
+	rti
+@lclicnone
+	bra	@reread
+
+@arch
+        bsr     @musicstop
+        wait    10
+	ld      r0,/itf_efface
+        bsr     @playmid
+	ld	r0,0
+	ld	r1,1
+        send    r0,r1 
+	bsr     @sendwait
+        rtij    @startclip
+;	bra     @sendwaitloop
+
+@reread
+        bsr     @musicstop
+        wait    10
+        ld      r0,/itf_prev
+        bsr     @playmid
+	ld	r0,0
+	ld	r1,4
+        send    r0,r1 
+	bsr	@sendwait
+        ld      r0,/itf_noprev
+        bsr     @playmid
+	rtij	@startclip
+
+@pause
+	clr	r15
+	bsr	@musicstop
+	wait	10
+        ld      r0,/itf_stop
+        bsr     @playmid
+        ld      r0,0
+        ld      r1,5
+        send    r0,r1 
+        bra     @sendwaitloop
+
+
+@sendread
+	bsr	@musicstop
+	ld	r0,0
+	ld	r1,2
+	send	r0,r1		; envoi info lecture
+        bra     @sendwaitloop
+
+@startwait
+	clr	r15
+	ld	r0,/state_none
+	str	r0,/state
+	bsr	@showsign2
+
+; arrêt du son
+	bsr	@musicstop
+
+@endclip1
+	clr	r0
+	str	r0,/msgi
+	str	r0,/msgc
+	str	r0,/cdown
+	str	r0,/infoi
+	
+	sec	r0,r1
+	str	r1,/infot
+	
+; boucle d'attente
+@cmdend
+	wait	1
+
+	bsr	@showmsg
+	bsr	@info
+	bsr	@leddown
+	bra	@cmdend
+
+
+
+rtype	equ	r10
+rval	equ	r11
+
+; gestion des leds d'information
+@info
+
+	sec	r0,r1
+	ldr	r0,/infot
+	sub	r1,r0
+	ld	r0,_infol_
+	cmp	r1,r0
+	blt	@info0
+	ldr	r0,/infoi
+	inc	r0
+	and	r0,7
+	str	r0,/infoi
+	sec	r0,r1
+	str	r1,/infot
+	clr	r0
+	str	r0,/infoc
+@info0	ldr	r0,/infoi
+	add	r0,r0
+	src	rtype,r0	; type d'information
+	beq	@inforst
+	dec	rtype
+	inc	r0
+	src	rval,r0	; valeur d'information
+
+	ldr	r3,/infoc
+	inc	r3
+	str	r3,/infoc
+	
+	ldt	r5,rtype,@infofirsttype
+	add	r5,rval
+	
+;	echo	r5
+	
+	ldt	r4,r5,@infospeed
+;	echo	r4
+	lsr	r3,r4
+	ldt	r4,r5,@infomskframe
+;	echo	r4
+	and	r3,r4
+	ldt	r4,r5,@infofirst
+;	echo	r4
+	add	r3,r4
+	ld	r4,3
+	mulw	r3,r4
+
+	ld	r5,3
+	ld	r6,0
+	
+	ldtw	r0,@infoframes
+	incw	r3,r4
+	ldt	r2,r0,@infoblue
+	ldt	r1,r0,@infogreen
+	ldt	r0,r0,@infored
+	led	r5,r6
+	
+	dec	r5
+	ldtw	r0,@infoframes
+	incw	r3,r4
+        ldt     r2,r0,@infoblue
+        ldt     r1,r0,@infogreen
+        ldt     r0,r0,@infored
+ 	led	r5,r6
+	
+	dec	r5
+	ldtw	r0,@infoframes
+	incw	r3,r4
+        ldt     r2,r0,@infoblue
+        ldt     r1,r0,@infogreen
+        ldt     r0,r0,@infored
+ 	led	r5,r6
+	rts
+@inforst
+	clr	r0
+	str	r0,/infoi
+	clr	r0
+	str	r0,/infoc
+	palette	r0,r0
+	ld	r4,1
+	ld	r5,40
+	led	r4,r5
+	inc	r4
+	led	r4,r5
+	inc	r4
+	led	r4,r5
+	rts	
+
+; srctype-> animtype = infofirsttype[srctype]
+; srcval-> anim = infofirst[animtype+srcval]
+;       -> msk = infomsk[animtype+srcval]
+;       -> speed = infospeed[animtype+srcval]
+
+@infofirsttype	fcb	0,13,6,0,0,20,24,0
+@infofirst	fcb	0,2,4,8,16,24
+		fcb	32,34,38,42,46,50,54
+		fcb	58,62,66,70,72,76,80
+		fcb	84,88,90,92
+		fcb	94,94,94,94,94,98,98,98,98,98,98
+@infospeed	fcb	4,4,3,3,4,3
+		fcb	6,5,4,3,2,1,0
+		fcb	1,2,3,4,3,2,1
+		fcb	3,3,3,3
+		fcb	4,4,4,4,4,3,3,3,2,2,2
+@infomskframe	fcb	1,1,3,7,7,7
+		fcb	1,3,3,3,3,3,3
+		fcb	3,3,3,1,3,3,3
+		fcb	3,1,1,1
+		fcb	3,3,3,3,3,7,7,7,7,7,7
+		
+@infoframes	fcb	3,3,3,0,0,0
+		fcb	0,3,0,4,0,4
+		fcb	4,4,4,4,4,4,4,4,4,0,0,0
+		fcb	4,0,0,0,0,4,0,0,0,0,4,0,4,0,0,0,0,0,4,0,4,0,0,0
+		fcb	4,0,0,0,4,0,4,0,0,0,4,0,0,0,4,0,4,0,0,0,4,0,4,0
+		fcb	0,3,4,3,4,0,0,0,0,4,3,0,0,4,3,0,0,0,3,4,0,0,0,0
+
+		fcb	9,0,9,0,0,0
+		fcb	0,9,0,9,0,9,0,0,0,0,0,0
+		fcb	0,9,0,9,0,9,0,0,0,0,0,0
+		fcb	0,9,0,9,0,9,0,0,0,0,0,0
+		fcb	0,9,0,9,0,9,0,0,0,0,0,0
+		fcb	0,9,0,9,0,9,0,0,0,0,0,0
+		fcb	0,9,0,9,0,9,0,0,0,0,0,0
+
+                fcb     0,0,11,0,11,0,11,0,0,0,0,0
+                fcb     0,0,11,0,11,0,11,0,0,0,0,0
+                fcb     0,0,11,0,11,0,11,0,0,0,0,0
+                fcb     0,11,0,0,0,0
+                fcb     11,0,0,0,11,0,0,0,11,0,0,0
+                fcb     11,0,0,0,11,0,0,0,11,0,0,0
+                fcb     11,0,0,0,11,0,0,0,11,0,0,0
+
+		fcb	5,0,0,0,5,0,0,0,5,0,5,0
+		fcb	0,5,0,0,0,0
+		fcb	5,0,5,0,0,0
+		fcb	5,5,5,0,0,0
+
+		fcb	6,6,6,6,6,6,6,6,6,0,0,0
+		fcb	6,0,0,0,6,0,6,6,0,6,6,6,0,6,6,0,0,6,6,0,6,6,6,6
+@infored	fcb	0,255,0,255,0,255,0,255,128,255,128,255,128,255,128,255
+@infogreen	fcb	0,0,255,255,0,0,255,255,128,0,255,255,128,128,255,128
+@infoblue	fcb	0,0,0,0,255,255,255,255,128,0,128,128,255,255,255,0
+
+; gestion de l'affichage de la led de message
+@showmsg
+	ldr	r2,/msgi
+	ld	r0,18
+	add	r0,r2
+	src	r0,r0
+	ldr	r1,/msgc
+	add	r1,16
+	str	r1,/msgc
+	bne	@shend
+	tst	r0
+	bne	@shm1
+	ld	r2,255
+@shm1	inc	r2
+	str	r2,/msgi
+@shend	ldr	r1,/msgc
+	osc	r1,r1
+	palette	r0,r1
+	ld	r4,4
+	ld	r5,0
+	led	r4,r5
+	rts
+	
+; gestion de la led du bas (oscillation violette ou ambre)
+@leddown
+	ldr	r1,/cdown
+	add	r1,4
+	lastping	r2,r0
+	beq	@led0
+;	echo	r0
+	tst	r2
+	bne	@led0
+	ld	r2,120
+	cmp	r0,r2
+	bhi	@led1
+	ld	r0,5
+	download	r2
+	and	r2,2
+	beq	@led2
+	add	r1,28
+	bra	@led2
+@led0	add	r1,28
+@led1	ld	r0,15
+@led2	str	r1,/cdown
+	osc	r1,r1
+	palette	r0,r1
+	clr	r4
+	led	r4,r4
+	rts
+
+@sendwaitloop
+        ld      r0,0
+	inputrst	r0
+	bsr	@sendwait
+	bra	@sendwaitloop
+
+@sendwait
+	clr	r0
+	palette	r0,r0
+	ld	r3,4
+	ld	r4,20
+	led	r3,r4
+@sendw1	wait	1
+	bsr	@leddown
+	ld	r5,6
+	osc	r1,r10
+	palette	r5,r1
+	ld	r3,1
+	ld	r4,0
+	led	r3,r4
+
+	add	r10,40
+	osc	r1,r10
+	palette	r5,r1
+	inc	r3
+	led	r3,r4
+	
+	add	r10,40
+	osc	r1,r10
+	palette	r5,r1
+	inc	r3
+	led	r3,r4
+
+	add	r10,192
+
+	sendready	r0
+	echo	r0
+	dec	r0
+	bne	@sendw1
+	download	r1
+	and	r1,6
+	bne	@sendw1
+
+	rts
+	
+
+
+
+; affichage plein ecran : couleur r0, duree r5
+; touche à r0,r1,r2,r4
+@screen	ld	r1,255
+	palette	r0,r1
+	ld	r4,4
+@s1	led	r4,r5
+	dec	r4
+	bge	@s1
+	rts
+
+
+; montre la signature, et réinitialise les oreilles
+@showsign
+	ld	r0,_sign_
+	ld	r5,20
+	bsr	@screen
+	wait	r5
+	ld	r0,0
+	ld	r5,20
+	bsr	@screen
+	wait	r5
+	rts
+
+; montre la signature, et réinitialise les oreilles
+@showsign2
+	ld	r0,5
+	ld	r5,20
+	bsr	@screen
+	wait	r5
+@sh2	wait	1
+	music	r0
+	tst	r0
+	bne	@sh2
+	ld	r0,0
+	ld	r5,20
+	bsr	@screen
+	wait	r5
+	rts
+
+
+@musicstop
+	midistop
+	wavstop
+	rts
+	
+@vol	push	1,0
+	but3	r8
+	ldt	r8,r8,@voldat
+;	ld	r8,80
+	mvol	r8
+	pull	1,0
+	rti
+
+@voldat	fcb	0,160,200
+
+; affichage des leds pour feedback clic
+@clicled	
+	ld	r1,255
+	palette	r0,r1
+	ld	r3,4
+	ld	r4,0
+	led	r3,r4
+	rts
+	
+@clicm	push	255,255
+	ld	r0,0
+	inputrst	r0	; inhibition de l'interruption de clic
+	ld	r0,15
+	bsr	@clicled
+	clr	r5
+@clicm1	wait	1
+	inc	r5
+	ld	r0,40
+	cmp	r5,r0
+	blt	@clicm3
+	ld	r0,1
+	bsr	@clicled
+@clicm2	wait	1
+	pushbutton	r0
+	tst	r0
+	bne	@clicm2
+	ld	r0,2
+	bra	@clicm6
+@clicm3	pushbutton	r0
+	tst	r0
+	bne	@clicm1
+
+	ld	r5,12
+@clicm4	wait	1
+	dec	r5
+	beq	@clicm5
+	pushbutton	r0
+	tst	r0
+	beq	@clicm4
+	ld	r0,1
+	bra	@clicm6
+@clicm5	ld	r0,0
+@clicm6	ldr	r1,/state
+	echo	r1
+	ld	r2,3
+	mul	r1,r2
+	echo	r1
+	add	r1,r0
+	echo	r1
+	ld	r0,0
+	input	r0,@clicm	; interruption clic
+	brat	r1,@tbclics
+@tbclics
+	fdb	@clicnone,@dclicnone,@lclicnone
+	fdb	@clicplay,@dclicplay,@lclicplay
+
+@playmid
+	bsr	@musicstop
+	ld	r1,midi_vol
+	vol	r1
+	midiplay	r0
+@playmid0
+        wait    1
+        music   r0
+        tst     r0
+        bne     @playmid0
+	rts
+
+@tbpal	fcb	255,12,0,0,255,31,255,242,0,0,3,255,255,242,0,0,255,31,255,12,0,0,0,0
+	fcb	95,0,255,127,0,255,146,0,255,191,0,255,223,0,255,255,0,223,255,0,146,0,0,0
+	fcb	255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,0,0,0
+	fcb	254,128,2,243,68,2,216,6,7,200,4,13,170,0,24,218,5,96,207,6,138,0,0,0
+	fcb	20,155,18,255,0,0,252,243,5,20,155,18,252,243,5,255,0,0,20,155,18,0,0,0
+	fcb	252,238,71,206,59,69,85,68,212,78,167,82,243,75,153,151,71,196,255,255,255,0,0,0
+	fcb	204,255,102,204,255,0,153,255,0,51,204,0,0,153,51,0,136,0,0,102,510,0,0
+	fcb	204,255,102,204,255,0,153,255,0,51,204,0,0,153,51,0,136,0,0,102,510,0,0
+
+
+@data
+<data>
+	FCB	0,end
+	
+	END

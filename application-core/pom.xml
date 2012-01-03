@@ -20,6 +20,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.ccil.cowan.tagsoup</groupId>
+            <artifactId>tagsoup</artifactId>
+            <version>1.2</version>
+        </dependency>
+        <dependency>
             <groupId>com.nabalive</groupId>
             <artifactId>data-core</artifactId>
             <version>1.0-SNAPSHOT</version>
@@ -82,6 +87,11 @@
             <version>1.0.0</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy-all</artifactId>
+            <version>1.8.0</version>
+        </dependency>
 
     </dependencies>
 
@@ -97,5 +107,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>
