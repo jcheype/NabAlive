@@ -5,6 +5,7 @@
 .classpath
 .project
 .settings/
+.idea
 target/
 web-front/public
 web-front/tmp
