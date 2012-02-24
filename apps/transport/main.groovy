@@ -21,7 +21,7 @@ public class TransportApplication extends ApplicationBase{
     private MessageService messageService;
     
     public Object getIncidents(){
-        def data = new URL("http://www.incidents-transports.com/api/incidents.json/day").getText()
+        def data = new URL("http://www.incidents-transports.com/api/incidents.json/day").getText("UTF-8")
         def slurper = new JsonSlurper()
         return slurper.parseText(data)
     }

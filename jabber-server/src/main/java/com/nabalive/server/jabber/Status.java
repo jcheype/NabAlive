@@ -100,4 +100,8 @@ public class Status {
     public boolean isAsleep(){
         return "asleep".equalsIgnoreCase(presence);
     }
+
+    public boolean isIdle(){
+        return "idle".equalsIgnoreCase(presence);
+    }
 }

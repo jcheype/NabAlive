@@ -85,8 +85,8 @@ public class ApplicationScheduler {
         while (iterator.hasNext()) {
             Nabaztag nabaztag = iterator.next();
             Status status = connectionManager.get(nabaztag.getMacAddress());
-            if (status != null && !status.isAsleep()) {
-                if (rand.nextInt(3) == 0){
+            if (status != null && status.isIdle()) {
+                if (rand.nextInt(4) == 0){
                     try {
                         application.onStartup(nabaztag, findConfig(MOOD_APIKEY, nabaztag.getApplicationConfigList()));
                     } catch (Exception e) {
@@ -109,8 +109,8 @@ public class ApplicationScheduler {
         while (iterator.hasNext()) {
             Nabaztag nabaztag = iterator.next();
             Status status = connectionManager.get(nabaztag.getMacAddress());
-            if (status != null && !status.isAsleep()) {
-                if (rand.nextInt(3) == 0){
+            if (status != null && status.isIdle()) {
+                if (rand.nextInt(4) == 0){
                     try {
                         application.onStartup(nabaztag, findConfig(TAICHI_APIKEY, nabaztag.getApplicationConfigList()));
                     } catch (Exception e) {
