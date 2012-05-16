@@ -48,6 +48,7 @@ public class ClockApplication extends ApplicationBase {
         command.append("MC http://karotz.s3.amazonaws.com/applications/clock/" + lang + "/signature.mp3\nMW\n");
         command.append("CH http://karotz.s3.amazonaws.com/applications/clock/" + path + ".chor\n");
         command.append("MC http://karotz.s3.amazonaws.com/applications/clock/" + path + ".mp3\nMW\n");
+        command.append("MC http://karotz.s3.amazonaws.com/applications/clock/" + lang + "/signature.mp3\nMW\n");
 
         messageService.sendMessage(nabaztag.getMacAddress(), command.toString());
     }
