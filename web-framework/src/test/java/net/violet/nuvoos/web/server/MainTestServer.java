@@ -8,7 +8,7 @@ import net.violet.nuvoos.web.server.tester.restHandlerTester.MyRestHandler;
  * User: Julien Cheype
  * Date: 10/20/11
  */
-public class TestServer {
+public class MainTestServer {
 
     public static void main(String args[]) throws InterruptedException {
         final HttpServer httpServer = new HttpServer();

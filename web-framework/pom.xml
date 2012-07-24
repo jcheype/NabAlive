@@ -88,7 +88,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>net.violet.nuvoos.web.server.TestServer</mainClass>
+                            <mainClass>net.violet.nuvoos.web.server.MainTestServerrver</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>
