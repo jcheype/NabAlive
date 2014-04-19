@@ -30,27 +30,31 @@ task :clean do
   sh "rm", "-rf", "public/*"
 end
 
+
+def rebuild
+    sh "cp", "-rf", "image", "public"
+    sh 'jammit'
+    sh 'haml' , '-t', 'ugly', "index.haml", "public/index.html"
+    sh 'haml' , '-t', 'ugly', "index2.haml", "public/index2.html"
+
+    puts "    OK"
+rescue
+    nil
+end
+
 desc "Build all HTML, CSS and JavaScript files"
-task :default => (CSS + JS)
+task :default => (CSS + JS) do
+ rebuild
+end
+
 
 desc "Continuously watch for changes and rebuild files"
 task :watch => [] do
     require 'rubygems'
     require 'fssm'
 
-    def rebuild
-        sh 'rake clean default'
-        sh "cp", "-rf", "image", "public"
-        sh 'jammit'
-        sh 'haml' , '-t', 'ugly', "index.haml", "public/index.html"
-        sh 'haml' , '-t', 'ugly', "index2.haml", "public/index2.html"
-        
-        puts "    OK"
-    rescue
-        nil
-    end
-
     begin
+        sh 'rake clean default'
         rebuild
         FSSM.monitor(nil, ['**/*.coffee', '**/*.haml', '**/*.less']) do
             update { rebuild }
