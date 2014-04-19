@@ -128,6 +128,7 @@ public class MeteoApplication extends ApplicationBase {
         command.append(getCondition(meteoResult.tomorrowCondition, lang));
         command.append("MU http://karotz.s3.amazonaws.com/applications/weather/"+lang+"/temp/" + meteoResult.tomorrowTempHigh + ".mp3\nPL 3\nMW\n");
         command.append("MU http://karotz.s3.amazonaws.com/applications/weather/"+lang+"/" + unit + ".mp3\nPL 3\nMW\n");
+        command.append("MU http://karotz.s3.amazonaws.com/applications/weather/"+lang+"/signature.mp3\nPL 3\nMW\n");
 
         messageService.sendMessage(mac, command.toString());
 
